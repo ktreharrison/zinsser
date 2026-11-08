@@ -1,0 +1,25 @@
+extends: substitution
+level: warning
+ignorecase: true
+message: "Use '%s' instead of '%s'."
+swap:
+  'in order to': to
+  'due to the fact that': because
+  'at this point in time': now
+  'in the event that': if
+  'on a daily basis': daily
+  'for the purpose of': to
+  'in the near future': soon
+  'with regard to': about
+  'with respect to': about
+  'in reference to': about
+  'is able to': can
+  'has the ability to': can
+  'a large number of': many
+  'the vast majority of': most
+  'prior to': before
+  'subsequent to': after
+  'in light of the fact that': because
+  'utilize': use
+  'utilization': use
+  'leverage': use

@@ -1,0 +1,54 @@
+extends: existence
+level: warning
+ignorecase: true
+message: "Avoid empty corporate/AI puffery: '%s'. Use concrete specifics."
+tokens:
+  - paradigm shift
+  - synergy
+  - synergies
+  - thought leader
+  - thought leadership
+  - value-add
+  - best-of-breed
+  - ever-evolving landscape
+  - mission-critical
+  - game-changer
+  - foster
+  - fostering
+  - garner
+  - underscore
+  - harness
+  - elevate
+  - embark
+  - unleash
+  - unlock
+  - spearhead
+  - pivotal
+  - intricate
+  - intricacies
+  - multifaceted
+  - holistic
+  - realm
+  - beacon
+  - meticulous
+  - meticulously
+  - commendable
+  - landscape
+  - catalyst
+  - bolster
+  - augment
+  - demystify
+  - streamline
+  - revolutionize
+  - empower
+  - overarching
+  - groundbreaking
+  - cutting-edge
+  - transformative
+  - indispensable
+  - paramount
+  - nuanced
+  - vibrant
+  - synergistic
+  - in conclusion
+  - ultimately

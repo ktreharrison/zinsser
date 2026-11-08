@@ -1,0 +1,4 @@
+extends: script
+message: "Monotonous rhythm: 4+ consecutive sentences have nearly identical length (%s words). Vary your sentence length."
+level: suggestion
+script: CadenceMonotony.tengo

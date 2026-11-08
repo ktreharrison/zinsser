@@ -1,0 +1,29 @@
+extends: existence
+level: suggestion
+ignorecase: true
+message: "Reflexive slop detected ('%s'). Cut it for a tighter, more professional tone."
+tokens:
+  # The Antithesis Tic
+  - "not just .* but also"
+  - "it's not just about .* it's about"
+
+  # Announcing Phrases (Throat-clearing)
+  - "it is important to note that"
+  - "please note that"
+
+  # First-person work narration (Common in docs/commits)
+  - "i have added"
+  - "i've added"
+  - "i have updated"
+  - "i've updated"
+  - "i modified"
+  - "i implemented"
+  - "i've implemented"
+
+  # Reflexive Rule-of-Three (Puffery patterns)
+  # Note: Pure regex for "A, B, and C" is tricky in Vale,
+  # but we can target common AI triads.
+  - "fast, reliable, and scalable"
+  - "efficient, effective, and powerful"
+  - "seamless, intuitive, and robust"
+  - "comprehensive, detailed, and thorough"

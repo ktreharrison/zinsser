@@ -1,0 +1,31 @@
+extends: substitution
+level: warning
+ignorecase: true
+message: "Avoid zombie nouns: use active verb '%s' instead of '%s'."
+swap:
+  '(?:conduct|perform|do|carry out) an? investigation(?: into| of)?': investigate
+  '(?:make|reach) a decision': decide
+  'provide an? explanation': explain
+  'make an? assumption': assume
+  '(?:conduct|perform) an? analysis(?: of)?': analyze
+  'give consideration to': consider
+  'take into consideration': consider
+  'make a recommendation': recommend
+  'provide assistance': help
+  '(?:conduct|perform) a review of': review
+  'have a discussion about': discuss
+  'bring to a conclusion': conclude
+  '(?:achieve|make) an? improvement': improve
+  'conducted an? investigation': investigated
+  'made a decision': decided
+  'provided an? explanation': explained
+  'made an? assumption': assumed
+  'conducted an? analysis': analyzed
+  'gave consideration to': considered
+  'took into consideration': considered
+  'made a recommendation': recommended
+  'provided assistance': helped
+  'conducted a review of': reviewed
+  'had a discussion about': discussed
+  'brought to a conclusion': concluded
+  'achieved an? improvement': improved

@@ -1,0 +1,46 @@
+text := import("text")
+matches := []
+
+paragraphs := text.re_split("\\n\\s*\\n", scope)
+offset := 0
+
+for para in paragraphs {
+    trimmed := text.trim_space(para)
+    if !text.has_prefix(trimmed, "#") && !text.has_prefix(trimmed, "```") && !text.has_prefix(trimmed, "-") && !text.has_prefix(trimmed, "*") {
+        sentences := text.re_split("[.!?]+\\s+", trimmed)
+
+        if len(sentences) >= 4 {
+            lengths := []
+            for s in sentences {
+                words := text.re_split("\\s+", text.trim_space(s))
+                lengths = append(lengths, len(words))
+            }
+
+            for i := 0; i <= len(lengths) - 4; i++ {
+                w1 := lengths[i]
+                w2 := lengths[i+1]
+                w3 := lengths[i+2]
+                w4 := lengths[i+3]
+
+                max_len := w1
+                min_len := w1
+                for w in [w2, w3, w4] {
+                    if w > max_len { max_len = w }
+                    if w < min_len { min_len = w }
+                }
+
+                if min_len > 8 && (max_len - min_len) <= 5 {
+                    idx := text.index(scope[offset:], trimmed)
+                    if idx != -1 {
+                        matches = append(matches, {
+                            begin: offset + idx,
+                            end: offset + idx + len(trimmed)
+                        })
+                    }
+                    break
+                }
+            }
+        }
+    }
+    offset += len(para) + 2
+}

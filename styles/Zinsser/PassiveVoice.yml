@@ -1,0 +1,7 @@
+extends: existence
+message: "Passive voice detected ('%s'). Put the actor in the subject and the action in the verb."
+level: suggestion
+ignorecase: true
+tokens:
+  - '\b(?:am|is|are|was|were|be|been|being)\s+\w+ed\b'
+  - '\b(?:am|is|are|was|were|be|been|being)\s+(?:written|built|made|done|taken|given|shown|known|seen|found|held|kept|brought|thought|put|set|told|sent|left|run|drawn|broken|chosen|driven|fallen|forgotten|frozen|hidden|spoken|stolen|worn|woven)\b'

@@ -1,0 +1,17 @@
+extends: existence
+message: "Vague quantifier '%s'. Use a specific metric, number, or concrete example."
+level: suggestion
+ignorecase: true
+tokens:
+  - various
+  - numerous
+  - several
+  - a number of
+  - many people
+  - experts say
+  - studies show
+  - it is widely known
+  - significantly
+  - substantially
+  - exponentially
+  - vastly

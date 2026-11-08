@@ -1,0 +1,20 @@
+extends: existence
+message: "AI/LLM phrasing detected ('%s'). Rewrite with direct, concrete language."
+level: suggestion
+ignorecase: true
+tokens:
+  - not only .* but also
+  - it's not just about
+  - more than just
+  - at its core
+  - underscores the importance
+  - stands as a
+  - serves as a
+  - poised to
+  - in today's fast-paced
+  - that being said
+  - having said that
+  - by and large
+  - delv(?:e|es|ed|ing)
+  - rich tapestry
+  - testament to

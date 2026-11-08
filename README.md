@@ -1,0 +1,100 @@
+# Zinsser
+
+**Zinsser** is a local-first prose checker for professional writing. It combines grammar checks from Harper, configurable style rules from Vale, and its own sentence-cadence heuristics.
+
+## Features
+
+- **Anti-Slop Engine:** Detects and flags AI-generated "corporate speak" and "LLM-isms" using a curated vocabulary of modern AI markers.
+- **Cadence checks:** Zinsser's Rust pass estimates sentence-length monotony, delayed verbs, abstract-noun density, and sentence-to-sentence cohesion.
+- **Harper:** Runs `harper-core` grammar and spelling checks. Zinsser's cadence heuristics are separate; they do not use Harper POS tags.
+- **Vale:** Runs the project's YAML wording and phrasing rules when Vale is installed. Without Vale, this pass is skipped with a note.
+
+## Installation
+
+Install Zinsser from crates.io with Cargo:
+
+```bash
+cargo install zinsser
+```
+
+Cargo installs binaries to `$HOME/.cargo/bin`. Add that directory to `PATH` if your shell cannot find `zinsser`.
+
+In each project you want to check, initialize the local Vale rules and configuration:
+
+```bash
+cd path/to/your/project
+zinsser init
+```
+
+Vale is optional. Install [Vale](https://vale.sh/) to enable Zinsser's YAML style rules. Without it, Zinsser skips that pass and prints a note; Harper and cadence checks still run.
+
+## Usage
+
+### Check a file or directory
+```bash
+zinsser check fixtures/bad_corporate.md
+```
+
+First six findings:
+
+```bash
+fixtures/bad_corporate.md:3:1: warning [Zinsser.Clutter] Use 'to' instead of 'In order to'.
+fixtures/bad_corporate.md:3:26: warning [Zinsser.Puffery] Avoid empty corporate/AI puffery: 'synergy'. Use concrete specifics.
+fixtures/bad_corporate.md:3:43: warning [Zinsser.Clutter] Use 'use' instead of 'utilize'.
+fixtures/bad_corporate.md:3:74: warning [Zinsser.Clutter] Use 'because' instead of 'Due to the fact that'.
+fixtures/bad_corporate.md:3:115: warning [Zinsser.Puffery] Avoid empty corporate/AI puffery: 'ever-evolving landscape'. Use concrete specifics.
+fixtures/bad_corporate.md:3:140: suggestion [Zinsser.Greybeard] Reflexive slop detected ('it is important to note that'). Cut it for a tighter, more professional tone.
+```
+
+Pass a directory, such as `docs/`, to recursively check its Markdown files. Zinsser skips `.git`, `target`, and `node_modules`.
+
+Optional flags:
+
+- `--format json`: Emit JSON diagnostics for scripts and editors.
+- `--no-vale`: Run Harper and cadence checks without Vale.
+- `--no-harper`: Skip grammar and spelling checks.
+
+Checks exit with status 1 when they find a warning or error.
+
+### Get a Craft Scorecard
+```bash
+zinsser score fixtures/clean_craft.md
+```
+
+```bash
+--- Craft Scorecard: fixtures/clean_craft.md ---
+Words: 75 | Sentences: 12
+Avg Sentence Length: 6.2
+Sentence Length StdDev: 2.8 (Target >= 5.0)
+Abstract Noun Density: 4.0% (Target < 4.0%)
+Avg Subject-Verb Distance: 1.4 (Target < 6.0)
+Overall Grade: A
+--------------------------------------------
+```
+
+### Initialize project
+```bash
+zinsser init
+```
+
+`init` installs the Vale rules and Tengo script under `styles/` and creates `.vale.ini`. Existing files are preserved.
+
+## Architecture
+
+`zinsser check` combines three passes:
+1. **Harper** checks grammar and spelling.
+2. **Zinsser's Rust pass** applies cadence and density heuristics.
+3. **Vale** applies the project's declarative wording rules via 9 rule files:
+   - `AI_Tells.yml`: Detects LLM-specific phrasing.
+   - `CadenceMonotony.yml`: Flags rhythmic repetition.
+   - `Clutter.yml`: Enforces Ruthless Economy.
+   - `Hedging.yml`: Eliminates unnecessary qualifiers.
+   - `Nominalizations.yml`: Targets "Zombie Nouns".
+   - `PassiveVoice.yml`: Flags passive constructions.
+   - `Puffery.yml`: Targets corporate bloat.
+   - `WeaselWords.yml`: Flags vague quantifiers.
+   - `Greybeard.yml`: Flags selected writing tics.
+
+## License
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT) at your option.

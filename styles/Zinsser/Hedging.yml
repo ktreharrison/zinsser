@@ -1,0 +1,20 @@
+extends: existence
+level: suggestion
+ignorecase: true
+message: "Cut weak qualifier or hedge '%s' unless strictly necessary."
+tokens:
+  - it is worth noting that
+  - it should be noted that
+  - needless to say
+  - it goes without saying
+  - to all intents and purposes
+  - sort of
+  - kind of
+  - more or less
+  - in a sense
+  - arguably
+  - essentially
+  - basically
+  - quite
+  - rather
+  - somewhat
