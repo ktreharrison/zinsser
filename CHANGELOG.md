@@ -7,3 +7,4 @@
 - Add optional Vale style rules, with `zinsser init` to install project-local rules and configuration.
 - Add JSON diagnostics and a prose craft scorecard.
 - Publish the crate to crates.io for installation with `cargo install zinsser`.
+- Generate prebuilt binaries for macOS, Linux, and Windows; provide a shell installer for Unix.

@@ -19,6 +19,14 @@ cargo install zinsser
 
 Cargo installs binaries to `$HOME/.cargo/bin`. Add that directory to `PATH` if your shell cannot find `zinsser`.
 
+For a prebuilt Unix binary from GitHub Releases, run this after the release installer is published:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/ktreharrison/zinsser/releases/latest/download/zinsser-installer.sh | sh
+```
+
+The script downloads a prebuilt binary from the latest GitHub release. It becomes available after the first release is published; use Cargo until then.
+
 In each project you want to check, initialize the local Vale rules and configuration:
 
 ```bash
