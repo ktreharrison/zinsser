@@ -195,3 +195,62 @@ fn vale_puffery_no_longer_flags_plain_landscape() {
         "the evergreen-landscape phrase stays flagged"
     );
 }
+
+/// Scoring policy: spelling/vocabulary findings are dictionary coverage,
+/// not prose quality. Prose with clean metrics and only unknown technical
+/// words must keep its base grade.
+#[test]
+fn spelling_suggestions_do_not_sink_grade() {
+    use zinsser::scoring::{compute_grade, suggestion_penalty};
+
+    let content = "DuckDB keeps the kanban log queryable. POSIX tooling renders each webhook payload.";
+    let diags = HarperPass::lint(content, "test.md").unwrap();
+    let spelling = diags
+        .iter()
+        .filter(|d| d.rule_id == "Harper.Spelling")
+        .count();
+    assert!(
+        spelling >= 2,
+        "test setup needs real spelling findings, got {} diagnostics: {:?}",
+        spelling,
+        diags.iter().map(|d| &d.rule_id).collect::<Vec<_>>()
+    );
+
+    // Vocabulary findings contribute zero penalty, so the grade stays at base.
+    assert_eq!(suggestion_penalty(&diags), 0);
+    assert_eq!(
+        compute_grade(6.2, 2.8, 4.0, 1.4, suggestion_penalty(&diags), 0),
+        'A'
+    );
+}
+
+/// Scoring policy: non-spelling suggestions still count, but a suggestion
+/// flood costs at most one letter.
+#[test]
+fn non_spelling_suggestions_capped_at_one_letter() {
+    use zinsser::scoring::{compute_grade, suggestion_penalty};
+    use zinsser::types::{Diagnostic, Severity};
+
+    let diag = |rule_id: &str| Diagnostic {
+        file: "test.md".to_string(),
+        line: 0,
+        column: 0,
+        severity: Severity::Suggestion,
+        rule_id: rule_id.to_string(),
+        message: "synthetic".to_string(),
+        suggested_fix: None,
+    };
+
+    let flood: Vec<Diagnostic> = (0..20).map(|_| diag("Harper.Grammar")).collect();
+    assert_eq!(suggestion_penalty(&flood), 1);
+    assert_eq!(
+        compute_grade(6.2, 2.8, 4.0, 1.4, suggestion_penalty(&flood), 0),
+        'B',
+        "a suggestion flood costs one letter, not a freefall"
+    );
+
+    let mixed: Vec<Diagnostic> = (0..20)
+        .map(|i| diag(if i % 2 == 0 { "Harper.Spelling" } else { "Harper.Grammar" }))
+        .collect();
+    assert_eq!(suggestion_penalty(&mixed), 1);
+}
