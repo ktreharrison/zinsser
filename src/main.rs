@@ -162,8 +162,8 @@ fn main() -> Result<()> {
             no_harper,
             dictionary,
         } => {
-            let dictionary: Arc<dyn Dictionary> =
-                load_user_dictionary(&dictionary).unwrap_or_else(|| FullDictionary::curated());
+            let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
+                .unwrap_or_else(|| FullDictionary::curated());
             let files = collect_markdown_files(path)?;
             let mut pass_failed = false;
             let mut all_diagnostics = Vec::new();
@@ -235,8 +235,8 @@ fn main() -> Result<()> {
             }
         }
         Commands::Score { path, dictionary } => {
-            let dictionary: Arc<dyn Dictionary> =
-                load_user_dictionary(&dictionary).unwrap_or_else(|| FullDictionary::curated());
+            let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
+                .unwrap_or_else(|| FullDictionary::curated());
             let content = std::fs::read_to_string(&path)?;
             let path_str = path.to_string_lossy().to_string();
             let blocks = extract_prose_blocks(&content);
@@ -244,11 +244,17 @@ fn main() -> Result<()> {
             let (words, sents, avg_len, stddev, abs_pct, avg_sv) = cadence.calculate_score(&blocks);
 
             // Factor the lint findings into the grade: prose the checker
-            // itself complains about should not score an A.
+            // itself complains about should not score an A. Vale findings
+            // count too, and Harper/Vale suggestions pull the grade down at
+            // half weight (two suggestions cost one letter).
             let mut lint_diagnostics: Vec<Diagnostic> =
                 HarperPass::lint_with_dictionary(&content, &path_str, dictionary.clone())?;
             for block in &blocks {
                 lint_diagnostics.extend(cadence.check_block(block, &path_str, &content));
+            }
+            match ValeRunner::run(&path_str) {
+                Ok(diags) => lint_diagnostics.extend(diags),
+                Err(e) => eprintln!("Vale pass failed for {}: {}", path_str, e),
             }
             let lint_warnings = lint_diagnostics
                 .iter()
@@ -258,13 +264,17 @@ fn main() -> Result<()> {
                 .iter()
                 .filter(|d| matches!(d.severity, Severity::Error))
                 .count();
+            let lint_suggestions = lint_diagnostics
+                .iter()
+                .filter(|d| matches!(d.severity, Severity::Suggestion))
+                .count();
 
             let grade = scoring::compute_grade(
                 avg_len,
                 stddev,
                 abs_pct,
                 avg_sv,
-                lint_warnings,
+                lint_warnings + lint_suggestions / 2,
                 lint_errors,
             );
 
