@@ -245,8 +245,10 @@ fn main() -> Result<()> {
 
             // Factor the lint findings into the grade: prose the checker
             // itself complains about should not score an A. Vale findings
-            // count too, and Harper/Vale suggestions pull the grade down at
-            // half weight (two suggestions cost one letter).
+            // count when Vale is installed (an optional pass). Spelling
+            // suggestions never affect the grade - unknown project words are
+            // dictionary coverage, not prose quality; other suggestions pull
+            // the grade down at half weight, capped at one letter.
             let mut lint_diagnostics: Vec<Diagnostic> =
                 HarperPass::lint_with_dictionary(&content, &path_str, dictionary.clone())?;
             for block in &blocks {
@@ -274,7 +276,7 @@ fn main() -> Result<()> {
                 stddev,
                 abs_pct,
                 avg_sv,
-                lint_warnings + lint_suggestions / 2,
+                lint_warnings + scoring::suggestion_penalty(&lint_diagnostics),
                 lint_errors,
             );
 
