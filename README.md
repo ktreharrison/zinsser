@@ -61,6 +61,7 @@ Optional flags:
 - `--format json`: Emit JSON diagnostics for scripts and editors.
 - `--no-vale`: Run Harper and cadence checks without Vale.
 - `--no-harper`: Skip grammar and spelling checks.
+- `--dictionary <path>`: Extra word list (one word per line) for project terms. `.zinsser/dictionary.txt` is always loaded when present. Case variants are handled; plurals and other inflected forms need their own entries.
 
 Checks exit with status 1 when they find a warning or error.
 
@@ -75,17 +76,20 @@ Words: 75 | Sentences: 12
 Avg Sentence Length: 6.2
 Sentence Length StdDev: 2.8 (Target >= 5.0)
 Abstract Noun Density: 4.0% (Target < 4.0%)
-Avg Subject-Verb Distance: 1.4 (Target < 6.0)
+Avg Subject-Verb Distance: 1.8 (Target < 6.0)
+Lint Findings: 0 warnings, 0 errors (each warning costs one letter, each error two)
 Overall Grade: A
 --------------------------------------------
 ```
+
+The grade combines the rhythm metrics with the linter's own findings: prose the checker complains about cannot score an A. It measures the properties above, not whether the writing is good.
 
 ### Initialize project
 ```bash
 zinsser init
 ```
 
-`init` installs the Vale rules and Tengo script under `styles/` and creates `.vale.ini`. Existing files are preserved.
+`init` installs the Vale rules and Tengo script under `styles/`, creates `.vale.ini`, and seeds `.zinsser/dictionary.txt` for project vocabulary. Existing files are preserved.
 
 ## Architecture
 
