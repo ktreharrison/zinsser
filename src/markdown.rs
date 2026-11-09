@@ -1,4 +1,4 @@
-use pulldown_cmark::{Parser, Event, Tag, TagEnd};
+use pulldown_cmark::{Event, Options, Parser, Tag, TagEnd};
 
 #[derive(Debug)]
 pub struct ProseBlock {
@@ -7,7 +7,13 @@ pub struct ProseBlock {
 }
 
 pub fn extract_prose_blocks(content: &str) -> Vec<ProseBlock> {
-    let parser = Parser::new(content);
+    // Enable tables and frontmatter so their contents are excluded from
+    // prose analysis instead of being read as sentences.
+    let options = Options::ENABLE_TABLES
+        | Options::ENABLE_FOOTNOTES
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_YAML_STYLE_METADATA_BLOCKS;
+    let parser = Parser::new_ext(content, options);
     let mut blocks = Vec::new();
     let mut current_text = String::new();
     let mut block_depth = 0;
