@@ -1,3 +1,23 @@
+use crate::types::{Diagnostic, Severity};
+
+/// Penalty contribution (in warning-equivalents) from suggestion-severity
+/// lint findings.
+///
+/// Spelling/vocabulary findings (`Harper.Spelling`) never affect the grade:
+/// unknown project words are a dictionary-coverage issue, not a
+/// prose-quality issue, and a project the curated dictionary does not know
+/// should not see its score sink on vocabulary alone. Other suggestions
+/// (grammar, style) pull the grade down at half weight, capped at one
+/// letter, so a suggestion flood cannot sink otherwise clean prose.
+pub fn suggestion_penalty(diagnostics: &[Diagnostic]) -> usize {
+    let non_spelling = diagnostics
+        .iter()
+        .filter(|d| matches!(d.severity, Severity::Suggestion))
+        .filter(|d| d.rule_id != "Harper.Spelling")
+        .count();
+    (non_spelling / 2).min(1)
+}
+
 /// Grade computation for `zinsser score`.
 ///
 /// The base grade comes from the rhythm metrics (sentence-length variation,
