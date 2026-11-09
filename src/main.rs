@@ -288,6 +288,7 @@ fn main() -> Result<()> {
                 avg_sv_distance: avg_sv,
                 lint_warnings,
                 lint_errors,
+                lint_suggestions,
                 grade,
             };
             Reporter::print_scorecard(&score);
