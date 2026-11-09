@@ -42,5 +42,7 @@ pub struct DocumentScore {
     pub lint_warnings: usize,
     #[serde(default)]
     pub lint_errors: usize,
+    #[serde(default)]
+    pub lint_suggestions: usize,
     pub grade: char,
 }
