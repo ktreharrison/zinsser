@@ -77,12 +77,16 @@ Avg Sentence Length: 6.2
 Sentence Length StdDev: 2.8 (Target >= 5.0)
 Abstract Noun Density: 4.0% (Target < 4.0%)
 Avg Subject-Verb Distance: 1.8 (Target < 6.0)
-Lint Findings: 0 warnings, 0 errors (each warning costs one letter, each error two)
+Lint Findings: 0 warnings, 0 errors, 0 suggestions (warnings cost one letter, errors two; spelling suggestions do not affect the grade)
 Overall Grade: A
 --------------------------------------------
 ```
 
-The grade combines the rhythm metrics with the linter's own findings: prose the checker complains about cannot score an A. It measures the properties above, not whether the writing is good.
+The grade combines the rhythm metrics with the linter's own findings: prose the checker complains about cannot score an A. Warnings cost one letter grade each, errors two. Spelling findings (unknown words) never affect the grade: they mark dictionary coverage, not prose quality, and project terms belong in `.zinsser/dictionary.txt` or `--dictionary`. Other suggestion-level findings (grammar, style) cost at most one letter in total.
+
+The score reflects the checks that actually ran. The Vale style pass is optional: when a `vale` binary is installed its findings count toward the grade; without Vale, the grade reflects Harper and cadence findings only, and the run prints a note that the Vale pass was skipped. Run `zinsser init` and install Vale to make scores comparable across machines.
+
+The scorecard measures the properties above, not whether the writing is good.
 
 ### Initialize project
 ```bash
