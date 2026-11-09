@@ -25,7 +25,7 @@ impl Reporter {
         println!("Sentence Length StdDev: {:.1} (Target >= 5.0)", score.sentence_length_stddev);
         println!("Abstract Noun Density: {:.1}% (Target < 4.0%)", score.abstract_noun_pct);
         println!("Avg Subject-Verb Distance: {:.1} (Target < 6.0)", score.avg_sv_distance);
-        println!("Lint Findings: {} warnings, {} errors (each warning costs one letter, each error two)", score.lint_warnings, score.lint_errors);
+        println!("Lint Findings: {} warnings, {} errors, {} suggestions (each warning costs one letter, each error two, two suggestions one)", score.lint_warnings, score.lint_errors, score.lint_suggestions);
         println!("Overall Grade: {}", score.grade.to_string().bold().green());
         println!("--------------------------------------------\n");
     }
