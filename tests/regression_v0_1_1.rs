@@ -24,6 +24,10 @@ fn delayed_verb_not_flagged_when_verb_arrives_early() {
         "early main verb must not be flagged: {:?}",
         diags.iter().map(|d| &d.message).collect::<Vec<_>>()
     );
+    assert!(
+        diags.iter().all(|d| d.rule_id != "Cadence.NoVerbFound"),
+        "the early verb must actually be detected, not just unflagged"
+    );
 }
 
 /// "manages" was missing from the hardcoded verb list entirely.
@@ -36,6 +40,10 @@ fn manages_is_recognized_as_a_verb() {
         diags.iter().all(|d| d.rule_id != "Cadence.DelayedVerb"),
         "'manages' at word two must not be flagged: {:?}",
         diags.iter().map(|d| &d.message).collect::<Vec<_>>()
+    );
+    assert!(
+        diags.iter().all(|d| d.rule_id != "Cadence.NoVerbFound"),
+        "'manages' must actually be detected as a verb, not just unflagged"
     );
 }
 
@@ -82,7 +90,8 @@ fn project_dictionary_suppresses_known_terms() {
     let dict_path = dir.join("words.txt");
     std::fs::write(&dict_path, "DuckDB\nPOSIX\nKanban\n").unwrap();
 
-    let dictionary = load_user_dictionary(std::slice::from_ref(&dict_path))
+    let dictionary = load_user_dictionary(std::slice::from_ref(&dict_path), &dir)
+        .expect("dictionary load should succeed")
         .expect("dictionary with words should load");
 
     // Mixed case and sentence-initial variants are covered automatically.
