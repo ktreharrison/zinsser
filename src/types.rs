@@ -38,7 +38,9 @@ pub struct DocumentScore {
     pub sentence_length_stddev: f64,
     pub abstract_noun_pct: f64,
     pub avg_sv_distance: f64,
+    #[serde(default)]
     pub lint_warnings: usize,
+    #[serde(default)]
     pub lint_errors: usize,
     pub grade: char,
 }
