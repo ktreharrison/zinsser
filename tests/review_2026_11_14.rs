@@ -126,16 +126,27 @@ fn close(a: f64, b: f64) -> bool {
     (a - b).abs() < 0.05
 }
 
+/// Subject-verb distance depends on verb detection: the Brill tagger with the
+/// default `pos-tagger` feature, the dictionary fallback without it.
+#[cfg(feature = "pos-tagger")]
+const SLOP_SV: f64 = 5.0;
+#[cfg(not(feature = "pos-tagger"))]
+const SLOP_SV: f64 = 3.2;
+#[cfg(feature = "pos-tagger")]
+const CLEAN_SV: f64 = 1.4;
+#[cfg(not(feature = "pos-tagger"))]
+const CLEAN_SV: f64 = 1.75;
+
 #[test]
 fn calculate_score_matches_known_fixture_metrics() {
     let (words, sents, avg, sd, abs, sv) = fixture_metrics("slop");
     assert_eq!((words, sents), (151, 5));
-    assert!(close(avg, 30.2) && close(sd, 3.6) && close(abs, 4.0) && close(sv, 5.0),
+    assert!(close(avg, 30.2) && close(sd, 3.6) && close(abs, 4.0) && close(sv, SLOP_SV),
         "slop metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}");
 
     let (words, sents, avg, sd, abs, sv) = fixture_metrics("clean_craft");
     assert_eq!((words, sents), (75, 12));
-    assert!(close(avg, 6.2) && close(sd, 2.8) && close(abs, 4.0) && close(sv, 1.4),
+    assert!(close(avg, 6.2) && close(sd, 2.8) && close(abs, 4.0) && close(sv, CLEAN_SV),
         "clean_craft metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}");
 }
 
