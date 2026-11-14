@@ -18,6 +18,16 @@ pub fn suggestion_penalty(diagnostics: &[Diagnostic]) -> usize {
     (non_spelling / 2).min(1)
 }
 
+/// Grade-A thresholds. The scorecard prints these same values as its
+/// targets, so the printed target and the grading rule cannot drift apart.
+pub const A_MIN_STDDEV: f64 = 5.0;
+/// Short-sentence prose (average below `A_SHORT_AVG_LEN`) needs only this much variation.
+pub const A_MIN_STDDEV_SHORT: f64 = 1.0;
+pub const A_SHORT_AVG_LEN: f64 = 10.0;
+pub const A_MAX_ABSTRACT_PCT: f64 = 4.0;
+pub const A_MAX_SV_DISTANCE: f64 = 6.0;
+pub const A_MAX_AVG_LEN: f64 = 25.0;
+
 /// Grade computation for `zinsser score`.
 ///
 /// The base grade comes from the rhythm metrics (sentence-length variation,
@@ -33,10 +43,11 @@ pub fn compute_grade(
     warnings: usize,
     errors: usize,
 ) -> char {
-    let base = if (stddev >= 5.0 || (avg_len < 10.0 && stddev >= 1.0))
-        && abs_pct <= 4.0
-        && avg_sv <= 6.0
-        && avg_len <= 25.0
+    let base = if (stddev >= A_MIN_STDDEV
+        || (avg_len < A_SHORT_AVG_LEN && stddev >= A_MIN_STDDEV_SHORT))
+        && abs_pct <= A_MAX_ABSTRACT_PCT
+        && avg_sv <= A_MAX_SV_DISTANCE
+        && avg_len <= A_MAX_AVG_LEN
     {
         'A'
     } else if (stddev >= 3.0 || (avg_len < 15.0 && stddev >= 0.5))
