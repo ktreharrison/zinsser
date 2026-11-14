@@ -403,3 +403,45 @@ fn default_dictionary_that_is_oversized_or_empty_only_warns() {
         fs::remove_dir_all(dir).unwrap();
     }
 }
+
+fn scratch(tag: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("zinsser-dict-{tag}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+/// Sourcery #5: "no usable words" is judged per file, not by how many words
+/// fit under the global cap, so an empty explicit file is an error even after
+/// earlier dictionaries filled the cap.
+#[test]
+fn empty_explicit_dictionary_is_an_error_even_after_the_cap() {
+    let dir = scratch("cap");
+    let full = dir.join("full.txt");
+    let words: String = (0..100_000).map(|i| format!("w{i}\n")).collect();
+    std::fs::write(&full, words).unwrap();
+    let empty = dir.join("empty.txt");
+    std::fs::write(&empty, "# only a comment\n").unwrap();
+    let result = zinsser::user_dictionary::load_user_dictionary(&[full, empty.clone()], &dir);
+    let error = result.err().expect("empty explicit file must be an error");
+    assert!(error.to_string().contains("no usable words"), "{error}");
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+/// Sourcery #5: an existing but empty default dictionary warns instead of
+/// silently using the curated dictionary only.
+#[test]
+fn empty_default_dictionary_warns() {
+    let dir = scratch("default");
+    std::fs::create_dir_all(dir.join(".zinsser")).unwrap();
+    std::fs::write(dir.join(".zinsser/dictionary.txt"), "# nothing yet\n").unwrap();
+    std::fs::write(dir.join("a.md"), "We ship it.\n").unwrap();
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_zinsser"))
+        .args(["check", "a.md", "--no-vale", "--format", "json"])
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("has no usable words"), "stderr: {stderr}");
+    std::fs::remove_dir_all(dir).unwrap();
+}
