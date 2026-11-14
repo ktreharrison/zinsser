@@ -1,7 +1,19 @@
 # Changelog
 
-## [0.1.1] - Unreleased
+## [0.2.0] - Unreleased
 
+### Breaking changes (library API)
+
+The `zinsser` command line is compatible; these affect code that uses the crate as a library (reported by `cargo semver-checks` against 0.1.0):
+
+- `ValeRunner::run` takes a second argument, the list of Zinsser rules handed to Vale (`&[]` for none).
+- `ProseBlock` has a new public field, `segments`; build blocks with `ProseBlock::new(text, start_byte)`.
+- `DocumentScore` has new public fields: `lint_warnings`, `lint_errors`, `lint_suggestions`.
+- `CadencePass` is no longer `UnwindSafe` / `RefUnwindSafe`.
+
+### Changes
+
+- Do not report spelling for words containing non-ASCII letters (`Français`, `Türkçe`, `दी`): Harper checks English only, and translation lists were the main source of spelling noise (#2). English typos are still reported.
 - Detect delayed verbs with Harper's Brill part-of-speech tagger, recalibrate the scorecard grade, and add a project dictionary (`.zinsser/dictionary.txt`, `--dictionary`).
 - Fix cadence diagnostic locations: columns pointed one character early, and drifted further after any link, emphasis or inline code earlier in the paragraph.
 - Find `.zinsser/dictionary.txt` in the checked path's parent directories, so checking a subdirectory uses the project dictionary.
