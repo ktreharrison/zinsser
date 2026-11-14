@@ -6,7 +6,7 @@
 
 - **Anti-Slop Engine:** Detects and flags AI-generated "corporate speak" and "LLM-isms" using a curated vocabulary of modern AI markers.
 - **Cadence checks:** Zinsser's Rust pass estimates sentence-length monotony, delayed verbs, abstract-noun density, and sentence-to-sentence cohesion.
-- **Harper:** Runs `harper-core` grammar and spelling checks. Zinsser's cadence heuristics are separate; they do not use Harper POS tags.
+- **Harper:** Runs `harper-core` grammar and spelling checks. The cadence pass uses Harper's Brill part-of-speech tagger (`harper-brill`, bundled and offline) to find the first verb, with a dictionary fallback.
 - **Vale:** Runs the project's YAML wording and phrasing rules when Vale is installed. Without Vale, this pass is skipped with a note.
 
 ## Installation
@@ -61,7 +61,7 @@ Optional flags:
 - `--format json`: Emit JSON diagnostics for scripts and editors.
 - `--no-vale`: Run Harper and cadence checks without Vale.
 - `--no-harper`: Skip grammar and spelling checks.
-- `--dictionary <path>`: Extra word list (one word per line) for project terms. `.zinsser/dictionary.txt` is always loaded when present. Case variants are handled; plurals and other inflected forms need their own entries.
+- `--dictionary <path>`: Extra word list (one word per line) for project terms. The nearest `.zinsser/dictionary.txt` at or above the checked path is always loaded, so `zinsser check docs/` from the project root finds the file `zinsser init` created. Case variants are handled; plurals and other inflected forms need their own entries.
 
 Checks exit with status 1 when they find a warning or error.
 
