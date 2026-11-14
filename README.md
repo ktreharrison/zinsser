@@ -17,6 +17,14 @@ Install Zinsser from crates.io with Cargo:
 cargo install zinsser
 ```
 
+For a smaller, faster build, leave out the part-of-speech tagger:
+
+```bash
+cargo install zinsser --no-default-features
+```
+
+The tagger comes from `harper-brill`, which always pulls in the `burn` machine-learning framework. Without it, Zinsser builds about 65 crates instead of 173 and finds verbs with its dictionary and word list only, so delayed-verb findings and subject-verb distance are less accurate.
+
 Cargo installs binaries to `$HOME/.cargo/bin`. Add that directory to `PATH` if your shell cannot find `zinsser`.
 
 For a prebuilt Unix binary from GitHub Releases, run this after the release installer is published:

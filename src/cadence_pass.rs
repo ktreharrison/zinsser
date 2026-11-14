@@ -1,5 +1,6 @@
 use crate::markdown::ProseBlock;
 use crate::types::{Diagnostic, Severity};
+#[cfg(feature = "pos-tagger")]
 use harper_brill::{brill_tagger, BrillTagger, FreqDict, Tagger, UPOS};
 use harper_core::{Dictionary, FullDictionary, WordMetadata};
 use regex::Regex;
@@ -11,6 +12,7 @@ pub struct CadencePass {
     stop_words: HashSet<String>,
     abstract_allowlist: HashSet<String>,
     dictionary: Arc<dyn Dictionary>,
+    #[cfg(feature = "pos-tagger")]
     tagger: Arc<BrillTagger<FreqDict>>,
 }
 
@@ -22,6 +24,7 @@ impl CadencePass {
     pub fn with_dictionary(dictionary: Arc<dyn Dictionary>) -> Self {
         Self {
             dictionary,
+            #[cfg(feature = "pos-tagger")]
             tagger: brill_tagger(),
             abstract_noun_regex: Regex::new(r"(?i)\b[a-z]{4,}(?:tion|sion|ment|ence|ance|ibility|ability|ization|isation|ality|osity|itude)(?:s)?\b").unwrap(),
             stop_words: ["the", "and", "a", "an", "of", "to", "in", "is", "it", "that", "as", "for", "was", "with", "on", "by"].iter().map(|s| s.to_string()).collect(),
@@ -221,6 +224,10 @@ impl CadencePass {
     /// back to dictionary metadata plus a curated wordlist. Errors fail
     /// safe: an unrecognized verb means no warning, never a confidently
     /// wrong word count.
+    ///
+    /// Without the `pos-tagger` feature (which pulls in harper-brill and,
+    /// through it, the burn ML stack) only the fallback runs.
+    #[cfg(feature = "pos-tagger")]
     fn find_first_verb_index(&self, words: &[&str]) -> Option<usize> {
         let cleaned: Vec<String> = words.iter().map(|w| Self::normalize_token(w)).collect();
         let tags = self.tagger.tag_sentence(&cleaned);
@@ -233,6 +240,11 @@ impl CadencePass {
                 return Some(idx);
             }
         }
+        self.find_first_verb_index_fallback(words)
+    }
+
+    #[cfg(not(feature = "pos-tagger"))]
+    fn find_first_verb_index(&self, words: &[&str]) -> Option<usize> {
         self.find_first_verb_index_fallback(words)
     }
 
