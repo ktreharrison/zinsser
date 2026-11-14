@@ -1,19 +1,17 @@
-mod cadence_pass;
-mod harper_pass;
-mod markdown;
-mod reporter;
-mod types;
-mod vale_runner;
-
 use anyhow::Result;
-use cadence_pass::CadencePass;
 use clap::{Parser, Subcommand};
-use harper_pass::HarperPass;
-use markdown::{extract_prose_blocks, get_line_column};
-use reporter::Reporter;
+use harper_core::Dictionary;
+use harper_core::FullDictionary;
 use std::path::{Path, PathBuf};
-use types::{DocumentScore, Severity};
-use vale_runner::ValeRunner;
+use std::sync::Arc;
+use zinsser::cadence_pass::CadencePass;
+use zinsser::harper_pass::HarperPass;
+use zinsser::markdown::{extract_prose_blocks, get_line_column};
+use zinsser::reporter::Reporter;
+use zinsser::style_pass::{vale_config, StylePass};
+use zinsser::types::{Diagnostic, DocumentScore, Severity};
+use zinsser::user_dictionary::load_user_dictionary;
+use zinsser::vale_runner::ValeRunner;
 
 #[derive(Parser)]
 #[command(name = "zinsser")]
@@ -30,13 +28,22 @@ enum Commands {
         path: PathBuf,
         #[arg(long)]
         format: Option<String>,
-        #[arg(long)]
+        /// Skip Zinsser's style rules and any external Vale pass.
+        #[arg(long, alias = "no-styles")]
         no_vale: bool,
         #[arg(long)]
         no_harper: bool,
+        /// Extra dictionary file (one word per line). `.zinsser/dictionary.txt` is always loaded when present.
+        #[arg(long)]
+        dictionary: Vec<PathBuf>,
     },
     /// Generate a craft scorecard for a file
-    Score { path: PathBuf },
+    Score {
+        path: PathBuf,
+        /// Extra dictionary file (one word per line). `.zinsser/dictionary.txt` is always loaded when present.
+        #[arg(long)]
+        dictionary: Vec<PathBuf>,
+    },
     /// Install missing Vale rules and initialize .vale.ini in the current directory
     Init,
 }
@@ -146,7 +153,46 @@ fn main() -> Result<()> {
             format,
             no_vale,
             no_harper,
+            dictionary,
         } => {
+            let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
+                .unwrap_or_else(|| FullDictionary::curated());
+            // Zinsser's own style rules run built in, from the project's
+            // Vale-format rule files when it has them. An installed Vale runs
+            // only for other styles the project's .vale.ini names.
+            let styles = if no_vale {
+                None
+            } else {
+                Some(StylePass::for_project(&path)?)
+            };
+            // Rules only Vale can run faithfully: the built-in engine's
+            // hand-offs plus any other styles named in .vale.ini.
+            let needs_vale: Vec<String> = styles
+                .iter()
+                .flat_map(|s| s.needs_vale.iter().map(|(name, _)| name.clone()))
+                .collect();
+            let external_styles: Vec<String> = vale_config(&path)
+                .map(|c| c.external_styles().iter().map(|s| s.to_string()).collect())
+                .unwrap_or_default();
+            let mut external_vale =
+                !no_vale && (!needs_vale.is_empty() || !external_styles.is_empty());
+            if let Some(styles) = &styles {
+                for note in &styles.unsupported_config {
+                    eprintln!("Note: built-in style rules do not apply {note}.");
+                }
+            }
+            if external_vale && !ValeRunner::available() {
+                external_vale = false;
+                let mut skipped: Vec<String> = styles
+                    .iter()
+                    .flat_map(|s| s.needs_vale.iter().map(|(n, why)| format!("{n} ({why})")))
+                    .collect();
+                skipped.extend(external_styles.iter().map(|s| format!("style {s}")));
+                eprintln!(
+                    "Note: 'vale' is not installed, so these were not checked: {}.",
+                    skipped.join(", ")
+                );
+            }
             let files = collect_markdown_files(path)?;
             let mut pass_failed = false;
             let mut all_diagnostics = Vec::new();
@@ -157,7 +203,8 @@ fn main() -> Result<()> {
 
                 // 1. Harper Pass
                 if !no_harper {
-                    match HarperPass::lint(&content, &path_str) {
+                    match HarperPass::lint_with_dictionary(&content, &path_str, dictionary.clone())
+                    {
                         Ok(mut diags) => {
                             for d in &mut diags {
                                 (d.line, d.column) = get_line_column(&content, d.column);
@@ -173,19 +220,22 @@ fn main() -> Result<()> {
 
                 // 2. Cadence Pass
                 let blocks = extract_prose_blocks(&content);
-                let cadence = CadencePass::new();
+                let cadence = CadencePass::with_dictionary(dictionary.clone());
                 for block in blocks {
                     let mut diags = cadence.check_block(&block, &path_str, &content);
                     for d in &mut diags {
                         (d.line, d.column) =
-                            get_line_column(&content, block.start_byte.saturating_add(d.column));
+                            get_line_column(&content, block.source_offset(d.column));
                     }
                     all_diagnostics.extend(diags);
                 }
 
-                // 3. Vale Pass
-                if !no_vale {
-                    match ValeRunner::run(&path_str) {
+                // 3. Style rules (built in), then other Vale styles if any.
+                if let Some(styles) = &styles {
+                    all_diagnostics.extend(styles.check(&content, &path_str));
+                }
+                if external_vale {
+                    match ValeRunner::run(&path_str, &needs_vale) {
                         Ok(diags) => all_diagnostics.extend(diags),
                         Err(e) => {
                             pass_failed = true;
@@ -216,36 +266,69 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
         }
-        Commands::Score { path } => {
+        Commands::Score { path, dictionary } => {
+            let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
+                .unwrap_or_else(|| FullDictionary::curated());
             let content = std::fs::read_to_string(&path)?;
+            let path_str = path.to_string_lossy().to_string();
             let blocks = extract_prose_blocks(&content);
-            let cadence = CadencePass::new();
+            let cadence = CadencePass::with_dictionary(dictionary.clone());
             let (words, sents, avg_len, stddev, abs_pct, avg_sv) = cadence.calculate_score(&blocks);
 
-            let grade = if (stddev >= 5.0 || (avg_len < 10.0 && stddev >= 1.0))
-                && abs_pct <= 4.0
-                && avg_sv <= 6.0
-            {
-                'A'
-            } else if (stddev >= 3.0 || (avg_len < 15.0 && stddev >= 0.5))
-                && abs_pct <= 7.0
-                && avg_sv <= 10.0
-            {
-                'B'
-            } else if (stddev >= 1.0 || avg_len < 20.0) && abs_pct <= 12.0 {
-                'C'
-            } else {
-                'F'
-            };
+            // Factor the lint findings into the grade: prose the checker
+            // itself complains about should not score an A. Zinsser's style
+            // rules always count (built in, so the grade does not depend on
+            // whether Vale is installed); other Vale styles do not. Spelling
+            // suggestions never affect the grade - unknown project words are
+            // dictionary coverage, not prose quality; other suggestions pull
+            // the grade down at half weight, capped at one letter.
+            let mut lint_diagnostics: Vec<Diagnostic> =
+                HarperPass::lint_with_dictionary(&content, &path_str, dictionary.clone())?;
+            for block in &blocks {
+                lint_diagnostics.extend(cadence.check_block(block, &path_str, &content));
+            }
+            let styles = StylePass::for_project(&path)?;
+            lint_diagnostics.extend(styles.check(&content, &path_str));
+            if !styles.needs_vale.is_empty() {
+                let names: Vec<&str> = styles.needs_vale.iter().map(|(n, _)| n.as_str()).collect();
+                eprintln!(
+                    "Note: the grade leaves out rules that need Vale: {}.",
+                    names.join(", ")
+                );
+            }
+            let lint_warnings = lint_diagnostics
+                .iter()
+                .filter(|d| matches!(d.severity, Severity::Warning))
+                .count();
+            let lint_errors = lint_diagnostics
+                .iter()
+                .filter(|d| matches!(d.severity, Severity::Error))
+                .count();
+            let lint_suggestions = lint_diagnostics
+                .iter()
+                .filter(|d| matches!(d.severity, Severity::Suggestion))
+                .count();
+
+            let grade = zinsser::scoring::compute_grade(
+                avg_len,
+                stddev,
+                abs_pct,
+                avg_sv,
+                lint_warnings + zinsser::scoring::suggestion_penalty(&lint_diagnostics),
+                lint_errors,
+            );
 
             let score = DocumentScore {
-                file: path.to_string_lossy().to_string(),
+                file: path_str,
                 word_count: words,
                 sentence_count: sents,
                 avg_sentence_length: avg_len,
                 sentence_length_stddev: stddev,
                 abstract_noun_pct: abs_pct,
                 avg_sv_distance: avg_sv,
+                lint_warnings,
+                lint_errors,
+                lint_suggestions,
                 grade,
             };
             Reporter::print_scorecard(&score);
@@ -265,6 +348,16 @@ fn main() -> Result<()> {
                 println!("Initialized .vale.ini.");
             } else {
                 println!("Kept existing .vale.ini unchanged.");
+            }
+
+            std::fs::create_dir_all(".zinsser")?;
+            if write_if_missing(
+                Path::new(".zinsser/dictionary.txt"),
+                "# Project words zinsser should not spelling-flag, one per line.\n# Plural and inflected forms need their own entries.\n",
+            )? {
+                println!("Initialized .zinsser/dictionary.txt.");
+            } else {
+                println!("Kept existing .zinsser/dictionary.txt unchanged.");
             }
         }
     }
@@ -290,6 +383,10 @@ mod tests {
         ));
         fs::create_dir_all(root.join("nested")).unwrap();
         fs::create_dir_all(root.join("target/nested")).unwrap();
+        fs::create_dir_all(root.join(".git")).unwrap();
+        fs::create_dir_all(root.join("node_modules/pkg")).unwrap();
+        fs::write(root.join(".git/notes.md"), "ignored").unwrap();
+        fs::write(root.join("node_modules/pkg/README.md"), "ignored").unwrap();
         fs::write(root.join("top.md"), "top").unwrap();
         fs::write(root.join("nested/deep.md"), "nested").unwrap();
         fs::write(root.join("target/nested/generated.md"), "ignored").unwrap();

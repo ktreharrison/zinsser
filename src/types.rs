@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use colored::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Severity {
@@ -38,5 +38,11 @@ pub struct DocumentScore {
     pub sentence_length_stddev: f64,
     pub abstract_noun_pct: f64,
     pub avg_sv_distance: f64,
+    #[serde(default)]
+    pub lint_warnings: usize,
+    #[serde(default)]
+    pub lint_errors: usize,
+    #[serde(default)]
+    pub lint_suggestions: usize,
     pub grade: char,
 }

@@ -1,6 +1,6 @@
 [package]
 name = "zinsser"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Local-first prose linter and structural cadence engine"
 license = "MIT OR Apache-2.0"
@@ -17,8 +17,24 @@ serde_json = "1.0"
 colored = "2.1"
 anyhow = "1.0"
 regex = "1.10"
+# Brill POS tagger (contextual verb detection); embeds its trained model, no
+# network. Optional because its harper-pos-utils dependency always pulls in the
+# burn ML framework, which dominates build time and binary size.
+harper-brill = { version = "3", optional = true }
+yaml-rust2 = "0.13"
+
+[features]
+default = ["pos-tagger"]
+# Context-aware verb detection. Without it, delayed-verb checks use the
+# dictionary and wordlist fallback only.
+pos-tagger = ["dep:harper-brill"]
 
 # The profile that 'dist' will build with
+# Drop symbol tables from shipped binaries (5.9 MB -> 5.0 MB on macOS);
+# panics still print their message. The dist profile inherits this.
+[profile.release]
+strip = true
+
 [profile.dist]
 inherits = "release"
 lto = "thin"

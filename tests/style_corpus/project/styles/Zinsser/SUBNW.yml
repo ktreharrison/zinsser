@@ -1,0 +1,6 @@
+extends: substitution
+message: "use %s not %s"
+level: warning
+nonword: true
+swap:
+  'e\.g\.': for example
