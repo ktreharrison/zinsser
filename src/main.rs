@@ -1,25 +1,16 @@
-mod cadence_pass;
-mod harper_pass;
-mod markdown;
-mod reporter;
-mod scoring;
-mod types;
-mod user_dictionary;
-mod vale_runner;
-
 use anyhow::Result;
-use cadence_pass::CadencePass;
+use zinsser::cadence_pass::CadencePass;
 use clap::{Parser, Subcommand};
 use harper_core::Dictionary;
 use harper_core::FullDictionary;
-use harper_pass::HarperPass;
-use markdown::{extract_prose_blocks, get_line_column};
-use reporter::Reporter;
+use zinsser::harper_pass::HarperPass;
+use zinsser::markdown::{extract_prose_blocks, get_line_column};
+use zinsser::reporter::Reporter;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use types::{Diagnostic, DocumentScore, Severity};
-use user_dictionary::load_user_dictionary;
-use vale_runner::ValeRunner;
+use zinsser::types::{Diagnostic, DocumentScore, Severity};
+use zinsser::user_dictionary::load_user_dictionary;
+use zinsser::vale_runner::ValeRunner;
 
 #[derive(Parser)]
 #[command(name = "zinsser")]
@@ -278,12 +269,12 @@ fn main() -> Result<()> {
                 .filter(|d| matches!(d.severity, Severity::Suggestion))
                 .count();
 
-            let grade = scoring::compute_grade(
+            let grade = zinsser::scoring::compute_grade(
                 avg_len,
                 stddev,
                 abs_pct,
                 avg_sv,
-                lint_warnings + scoring::suggestion_penalty(&lint_diagnostics),
+                lint_warnings + zinsser::scoring::suggestion_penalty(&lint_diagnostics),
                 lint_errors,
             );
 

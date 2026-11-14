@@ -13,9 +13,6 @@ pub struct ProseBlock {
 }
 
 impl ProseBlock {
-    /// Used by tests and library callers; the binary builds blocks through
-    /// `extract_prose_blocks`.
-    #[allow(dead_code)]
     pub fn new(text: impl Into<String>, start_byte: usize) -> Self {
         Self {
             text: text.into(),

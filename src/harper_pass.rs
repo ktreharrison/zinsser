@@ -8,9 +8,8 @@ use std::sync::Arc;
 pub struct HarperPass;
 
 impl HarperPass {
-    /// Lint with the curated dictionary only. Used by tests; the binary
-    /// always goes through `lint_with_dictionary`.
-    #[allow(dead_code)]
+    /// Lint with the curated dictionary only. The binary always goes
+    /// through `lint_with_dictionary`.
     pub fn lint(content: &str, file_path: &str) -> Result<Vec<Diagnostic>> {
         Self::lint_with_dictionary(content, file_path, FullDictionary::curated())
     }
