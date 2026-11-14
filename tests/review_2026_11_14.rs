@@ -149,3 +149,45 @@ fn computed_fixture_grades_order_slop_below_clean() {
     assert_eq!(grade("slop"), 'C');
     assert!(grade("bad_corporate") > grade("clean_craft"));
 }
+
+#[test]
+fn stacked_terminators_end_one_sentence() {
+    let sentences: Vec<&str> = CadencePass::split_sentences("Wait... really?! We shipped it.")
+        .into_iter()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+    assert_eq!(sentences, ["Wait...", "really?!", "We shipped it."]);
+    // Abbreviations and decimals still do not split.
+    assert_eq!(
+        CadencePass::split_sentences("Use e.g. version 2.5 now.")
+            .into_iter()
+            .filter(|s| !s.trim().is_empty())
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn one_non_spelling_suggestion_costs_nothing_two_cost_one_letter() {
+    use zinsser::scoring::suggestion_penalty;
+    use zinsser::types::{Diagnostic, Severity};
+    let suggestion = |rule: &str| Diagnostic {
+        file: "t.md".into(),
+        line: 1,
+        column: 1,
+        severity: Severity::Suggestion,
+        rule_id: rule.into(),
+        message: String::new(),
+        suggested_fix: None,
+    };
+    assert_eq!(suggestion_penalty(&[suggestion("Harper.Style")]), 0);
+    assert_eq!(
+        suggestion_penalty(&[suggestion("Harper.Style"), suggestion("Cadence.ColdStart")]),
+        1
+    );
+    assert_eq!(
+        suggestion_penalty(&[suggestion("Harper.Spelling"), suggestion("Harper.Spelling")]),
+        0
+    );
+}
