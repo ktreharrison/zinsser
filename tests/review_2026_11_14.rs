@@ -263,3 +263,18 @@ fn scorecard_targets_match_the_grading_thresholds() {
         'A'
     );
 }
+
+/// Issue #1: click README (pallets/click 8abb77a, line 10). v0.1.0 reported
+/// "Reader waits 20 words before reaching the main verb"; the verb is "aims",
+/// the second word. Holds with and without the pos-tagger feature.
+#[test]
+fn issue_1_early_verb_in_wrapped_sentence_is_not_delayed() {
+    let content = "It aims to make the process of writing command line tools quick and fun\n\
+                   while also preventing any frustration caused by the inability to\n\
+                   implement an intended CLI API.\n";
+    assert!(
+        content.split_whitespace().count() > 18,
+        "must reach the delayed-verb check"
+    );
+    assert_eq!(locate(content, "Cadence.DelayedVerb"), None);
+}
