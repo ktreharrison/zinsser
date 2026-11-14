@@ -1,0 +1,151 @@
+//! Regression tests for defects found in the 14 Nov 2026 review.
+
+use std::fs;
+use std::time::{SystemTime, UNIX_EPOCH};
+use zinsser::cadence_pass::CadencePass;
+use zinsser::markdown::{extract_prose_blocks, get_line_column};
+use zinsser::scoring::compute_grade;
+use zinsser::user_dictionary::find_project_dictionary;
+
+const DELAYED: &str = "After a long and incredibly complicated series of cross-functional architecture review meetings in three different global regional office locations, we found the bug.";
+
+/// Run the cadence pass the way `zinsser check` does and return the source
+/// (line, column) of the first diagnostic with `rule_id`.
+fn locate(content: &str, rule_id: &str) -> Option<(usize, usize)> {
+    let pass = CadencePass::new();
+    for block in extract_prose_blocks(content) {
+        for d in pass.check_block(&block, "t.md", content) {
+            if d.rule_id == rule_id {
+                return Some(get_line_column(content, block.source_offset(d.column)));
+            }
+        }
+    }
+    None
+}
+
+fn column_of(content: &str, needle: &str) -> (usize, usize) {
+    let byte = content.find(needle).expect("needle present");
+    get_line_column(content, byte)
+}
+
+#[test]
+fn delayed_verb_points_at_sentence_not_preceding_space() {
+    let content = format!("Plain intro. {DELAYED}\n");
+    assert_eq!(
+        locate(&content, "Cadence.DelayedVerb"),
+        Some(column_of(&content, "After"))
+    );
+}
+
+#[test]
+fn delayed_verb_location_survives_inline_markup() {
+    // The link target and inline code are dropped from the prose text; the
+    // reported column must still land on the sentence in the source.
+    let content = format!(
+        "See [the docs](https://example.com/a/very/long/path/that/is/not/prose) and `cargo test` here. {DELAYED}\n"
+    );
+    assert_eq!(
+        locate(&content, "Cadence.DelayedVerb"),
+        Some(column_of(&content, "After"))
+    );
+}
+
+#[test]
+fn delayed_verb_location_on_a_wrapped_line() {
+    let content = format!("Intro with **bold** words.\n{DELAYED}\n");
+    assert_eq!(
+        locate(&content, "Cadence.DelayedVerb"),
+        Some(column_of(&content, "After"))
+    );
+}
+
+#[test]
+fn split_sentences_handles_multibyte_text_and_terminators() {
+    let text = "Café is open. Naïve plans fail! Why? Done";
+    let sentences: Vec<&str> = CadencePass::split_sentences(text)
+        .into_iter()
+        .map(str::trim)
+        .collect();
+    assert_eq!(
+        sentences,
+        ["Café is open.", "Naïve plans fail!", "Why?", "Done"]
+    );
+}
+
+#[test]
+fn split_sentences_is_linear_enough_for_long_paragraphs() {
+    // 40k sentences in one paragraph. The old splitter was quadratic and took
+    // tens of seconds at this size; the linear one takes milliseconds.
+    let text = "The team shipped it. ".repeat(40_000);
+    let start = std::time::Instant::now();
+    let sentences = CadencePass::split_sentences(&text);
+    assert_eq!(sentences.iter().filter(|s| !s.trim().is_empty()).count(), 40_000);
+    assert!(
+        start.elapsed() < std::time::Duration::from_secs(5),
+        "split_sentences took {:?}",
+        start.elapsed()
+    );
+}
+
+#[test]
+fn project_dictionary_is_found_from_subdirectories() {
+    let root = std::env::temp_dir().join(format!(
+        "zinsser-dict-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir_all(root.join(".zinsser")).unwrap();
+    fs::create_dir_all(root.join("docs/deep")).unwrap();
+    fs::write(root.join(".zinsser/dictionary.txt"), "Zorblaxify\n").unwrap();
+    fs::write(root.join("docs/deep/page.md"), "We Zorblaxify.\n").unwrap();
+
+    let expected = root.join(".zinsser/dictionary.txt").canonicalize().unwrap();
+    for anchor in [root.clone(), root.join("docs"), root.join("docs/deep/page.md")] {
+        assert_eq!(
+            find_project_dictionary(&anchor).map(|p| p.canonicalize().unwrap()),
+            Some(expected.clone()),
+            "anchor {}",
+            anchor.display()
+        );
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+/// Score metrics computed from the real fixtures, not hand-copied numbers.
+/// The previous "mirrors fixtures/slop.md" test hard-coded an S-V distance of
+/// 7.6 that had already drifted to 5.0 when the Brill tagger landed.
+fn fixture_metrics(name: &str) -> (usize, usize, f64, f64, f64, f64) {
+    let content = fs::read_to_string(format!("fixtures/{name}.md")).unwrap();
+    CadencePass::new().calculate_score(&extract_prose_blocks(&content))
+}
+
+fn close(a: f64, b: f64) -> bool {
+    (a - b).abs() < 0.05
+}
+
+#[test]
+fn calculate_score_matches_known_fixture_metrics() {
+    let (words, sents, avg, sd, abs, sv) = fixture_metrics("slop");
+    assert_eq!((words, sents), (151, 5));
+    assert!(close(avg, 30.2) && close(sd, 3.6) && close(abs, 4.0) && close(sv, 5.0),
+        "slop metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}");
+
+    let (words, sents, avg, sd, abs, sv) = fixture_metrics("clean_craft");
+    assert_eq!((words, sents), (75, 12));
+    assert!(close(avg, 6.2) && close(sd, 2.8) && close(abs, 4.0) && close(sv, 1.4),
+        "clean_craft metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}");
+}
+
+#[test]
+fn computed_fixture_grades_order_slop_below_clean() {
+    let grade = |name| {
+        let (_, _, avg, sd, abs, sv) = fixture_metrics(name);
+        compute_grade(avg, sd, abs, sv, 0, 0)
+    };
+    assert_eq!(grade("clean_craft"), 'A');
+    assert_eq!(grade("slop"), 'C');
+    assert!(grade("bad_corporate") > grade("clean_craft"));
+}
