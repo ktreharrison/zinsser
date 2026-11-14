@@ -80,12 +80,28 @@ fn test_edge_case_abbreviations_and_decimals() {
 
 #[test]
 fn test_edge_case_technical_allowlist_no_false_positive() {
+    // The density check only runs on blocks of 35+ words, so the text must be
+    // long enough to reach it. 6 of these 35 words (17%) match the
+    // abstract-noun pattern but are allowlisted technical terms; without the
+    // allowlist the block would cross the 8% threshold.
     let pass = CadencePass::new();
-    let text = "The deployment of the function in the environment is a requirement for the system.";
-    let blocks = [ProseBlock::new(text.to_string(), 0)];
-    let diags = pass.check_block(&blocks[0], "test.md", "");
-    // "deployment", "function", "environment", "requirement" are allowlisted.
+    let text = "The deployment needs one function per environment. Each requirement names a component and a version. \
+                We keep every document short, and each section lists the arguments the team must check before we ship to users.";
+    assert!(text.split_whitespace().count() >= 35);
+    let diags = pass.check_block(&ProseBlock::new(text, 0), "test.md", "");
     assert!(diags.iter().all(|d| d.rule_id != "Cadence.AbstractDensity"));
+
+    // Control: the same block with non-allowlisted abstract nouns does warn,
+    // so the assertion above is not passing because the check never ran.
+    let abstract_text = text
+        .replace("deployment", "implementation")
+        .replace("function", "optimization")
+        .replace("environment", "organization")
+        .replace("requirement", "prioritization")
+        .replace("component", "facilitation")
+        .replace("version", "rationalization");
+    let diags = pass.check_block(&ProseBlock::new(abstract_text, 0), "test.md", "");
+    assert!(diags.iter().any(|d| d.rule_id == "Cadence.AbstractDensity"));
 }
 
 #[test]
