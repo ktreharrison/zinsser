@@ -1,0 +1,641 @@
+[
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 1,
+  "check": "Zinsser.Clutter",
+  "match": "In order to",
+  "severity": "warning",
+  "message": "Use 'to' instead of 'In order to'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 26,
+  "check": "Zinsser.Puffery",
+  "match": "synergy",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'synergy'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 43,
+  "check": "Zinsser.Clutter",
+  "match": "utilize",
+  "severity": "warning",
+  "message": "Use 'use' instead of 'utilize'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 74,
+  "check": "Zinsser.Clutter",
+  "match": "Due to the fact that",
+  "severity": "warning",
+  "message": "Use 'because' instead of 'Due to the fact that'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 115,
+  "check": "Zinsser.Puffery",
+  "match": "ever-evolving landscape",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'ever-evolving landscape'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 140,
+  "check": "Zinsser.Greybeard",
+  "match": "it is important to note that",
+  "severity": "suggestion",
+  "message": "Reflexive slop detected ('it is important to note that'). Cut it for a tighter, more professional tone."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 3,
+  "column": 180,
+  "check": "Zinsser.Nominalizations",
+  "match": "conduct an investigation into",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'investigate' instead of 'conduct an investigation into'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 5,
+  "column": 4,
+  "check": "Zinsser.Nominalizations",
+  "match": "provide an explanation",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'explain' instead of 'provide an explanation'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 5,
+  "column": 31,
+  "check": "Zinsser.Nominalizations",
+  "match": "make a decision",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'decide' instead of 'make a decision'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 5,
+  "column": 51,
+  "check": "Zinsser.Nominalizations",
+  "match": "perform an analysis",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'analyze' instead of 'perform an analysis'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 5,
+  "column": 75,
+  "check": "Zinsser.Nominalizations",
+  "match": "achieve an improvement",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'improve' instead of 'achieve an improvement'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 7,
+  "column": 18,
+  "check": "Zinsser.Hedging",
+  "match": "quite",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'quite' unless strictly necessary."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 9,
+  "column": 130,
+  "check": "Zinsser.AI_Tells",
+  "match": "testament to",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('testament to'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 9,
+  "column": 147,
+  "check": "Zinsser.Puffery",
+  "match": "paradigm shift",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'paradigm shift'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 9,
+  "column": 176,
+  "check": "Zinsser.Clutter",
+  "match": "leverage",
+  "severity": "warning",
+  "message": "Use 'use' instead of 'leverage'."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 9,
+  "column": 189,
+  "check": "Zinsser.Puffery",
+  "match": "value-add",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'value-add'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/bad_corporate.md",
+  "line": 9,
+  "column": 199,
+  "check": "Zinsser.Puffery",
+  "match": "synergies",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'synergies'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 3,
+  "column": 1,
+  "check": "Zinsser.AI_Tells",
+  "match": "In today's fast-paced",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('In today's fast-paced'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 3,
+  "column": 59,
+  "check": "Zinsser.Puffery",
+  "match": "paramount",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'paramount'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 3,
+  "column": 77,
+  "check": "Zinsser.Clutter",
+  "match": "leverage",
+  "severity": "warning",
+  "message": "Use 'use' instead of 'leverage'."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 3,
+  "column": 184,
+  "check": "Zinsser.AI_Tells",
+  "match": "delve",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('delve'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 3,
+  "column": 222,
+  "check": "Zinsser.Hedging",
+  "match": "it is worth noting that",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'it is worth noting that' unless strictly necessary."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 3,
+  "column": 270,
+  "check": "Zinsser.AI_Tells",
+  "match": "underscores the importance",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('underscores the importance'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 5,
+  "column": 1,
+  "check": "Zinsser.Clutter",
+  "match": "In order to",
+  "severity": "warning",
+  "message": "Use 'to' instead of 'In order to'."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 5,
+  "column": 220,
+  "check": "Zinsser.PassiveVoice",
+  "match": "is achieved",
+  "severity": "suggestion",
+  "message": "Passive voice detected ('is achieved'). Put the actor in the subject and the action in the verb."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 5,
+  "column": 350,
+  "check": "Zinsser.Puffery",
+  "match": "holistic",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'holistic'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 1,
+  "check": "Zinsser.Puffery",
+  "match": "Ultimately",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'Ultimately'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 18,
+  "check": "Zinsser.Puffery",
+  "match": "paradigm shift",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'paradigm shift'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 62,
+  "check": "Zinsser.Puffery",
+  "match": "empower",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'empower'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 88,
+  "check": "Zinsser.Puffery",
+  "match": "foster",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'foster'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 102,
+  "check": "Zinsser.Puffery",
+  "match": "vibrant",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'vibrant'. Use concrete specifics."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 155,
+  "check": "Zinsser.PassiveVoice",
+  "match": "are poised",
+  "severity": "suggestion",
+  "message": "Passive voice detected ('are poised'). Put the actor in the subject and the action in the verb."
+ },
+ {
+  "file": "fixtures/slop.md",
+  "line": 7,
+  "column": 159,
+  "check": "Zinsser.AI_Tells",
+  "match": "poised to",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('poised to'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 1,
+  "column": 5,
+  "check": "Zinsser.Puffery",
+  "match": "Paradigm Shift",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'Paradigm Shift'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 3,
+  "column": 1,
+  "check": "Zinsser.Clutter",
+  "match": "In order to",
+  "severity": "warning",
+  "message": "Use 'to' instead of 'In order to'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 3,
+  "column": 22,
+  "check": "Zinsser.Clutter",
+  "match": "utilize",
+  "severity": "warning",
+  "message": "Use 'use' instead of 'utilize'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 3,
+  "column": 30,
+  "check": "Zinsser.WeaselWords",
+  "match": "several",
+  "severity": "suggestion",
+  "message": "Vague quantifier 'several'. Use a specific metric, number, or concrete example."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 3,
+  "column": 45,
+  "check": "Zinsser.Hedging",
+  "match": "It is worth noting that",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'It is worth noting that' unless strictly necessary."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 3,
+  "column": 83,
+  "check": "Zinsser.AI_Tells",
+  "match": "delve",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('delve'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 7,
+  "column": 12,
+  "check": "Zinsser.PassiveVoice",
+  "match": "was written by",
+  "severity": "suggestion",
+  "message": "Passive voice detected ('was written by'). Put the actor in the subject and the action in the verb."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 7,
+  "column": 47,
+  "check": "Zinsser.PassiveVoice",
+  "match": "were confused by",
+  "severity": "suggestion",
+  "message": "Passive voice detected ('were confused by'). Put the actor in the subject and the action in the verb."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 9,
+  "column": 6,
+  "check": "Zinsser.Nominalizations",
+  "match": "conducted an investigation",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'investigated' instead of 'conducted an investigation'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 9,
+  "column": 49,
+  "check": "Zinsser.Clutter",
+  "match": "on a daily basis",
+  "severity": "warning",
+  "message": "Use 'daily' instead of 'on a daily basis'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 10,
+  "column": 16,
+  "check": "Zinsser.AI_Tells",
+  "match": "not only fast but also",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('not only fast but also'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 10,
+  "column": 53,
+  "check": "Zinsser.AI_Tells",
+  "match": "serves as a",
+  "severity": "suggestion",
+  "message": "AI/LLM phrasing detected ('serves as a'). Rewrite with direct, concrete language."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 10,
+  "column": 65,
+  "check": "Zinsser.Puffery",
+  "match": "beacon",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'beacon'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 11,
+  "column": 3,
+  "check": "Zinsser.Clutter",
+  "match": "Prior to",
+  "severity": "warning",
+  "message": "Use 'before' instead of 'Prior to'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 11,
+  "column": 23,
+  "check": "Zinsser.Nominalizations",
+  "match": "made a decision",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'decided' instead of 'made a decision'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 11,
+  "column": 42,
+  "check": "Zinsser.Puffery",
+  "match": "streamline",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'streamline'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 13,
+  "column": 3,
+  "check": "Zinsser.WeaselWords",
+  "match": "Experts say",
+  "severity": "suggestion",
+  "message": "Vague quantifier 'Experts say'. Use a specific metric, number, or concrete example."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 13,
+  "column": 25,
+  "check": "Zinsser.Puffery",
+  "match": "game-changer",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'game-changer'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 13,
+  "column": 48,
+  "check": "Zinsser.Puffery",
+  "match": "unlock",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'unlock'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 13,
+  "column": 55,
+  "check": "Zinsser.Puffery",
+  "match": "synergy",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'synergy'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 13,
+  "column": 74,
+  "check": "Zinsser.Puffery",
+  "match": "realm",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'realm'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 17,
+  "column": 3,
+  "check": "Zinsser.Puffery",
+  "match": "foster",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'foster'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 17,
+  "column": 12,
+  "check": "Zinsser.Greybeard",
+  "match": "Please note that",
+  "severity": "suggestion",
+  "message": "Reflexive slop detected ('Please note that'). Cut it for a tighter, more professional tone."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 17,
+  "column": 42,
+  "check": "Zinsser.Hedging",
+  "match": "basically",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'basically' unless strictly necessary."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 25,
+  "column": 10,
+  "check": "Zinsser.Puffery",
+  "match": "holistic",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'holistic'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 25,
+  "column": 65,
+  "check": "Zinsser.Puffery",
+  "match": "mission-critical",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'mission-critical'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 25,
+  "column": 104,
+  "check": "Zinsser.Hedging",
+  "match": "quite",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'quite' unless strictly necessary."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 25,
+  "column": 111,
+  "check": "Zinsser.Puffery",
+  "match": "intricate",
+  "severity": "warning",
+  "message": "Avoid empty corporate/AI puffery: 'intricate'. Use concrete specifics."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 27,
+  "column": 1,
+  "check": "Zinsser.Greybeard",
+  "match": "It is important to note that",
+  "severity": "suggestion",
+  "message": "Reflexive slop detected ('It is important to note that'). Cut it for a tighter, more professional tone."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 27,
+  "column": 33,
+  "check": "Zinsser.Nominalizations",
+  "match": "made a decision",
+  "severity": "warning",
+  "message": "Avoid zombie nouns: use active verb 'decided' instead of 'made a decision'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 27,
+  "column": 50,
+  "check": "Zinsser.Clutter",
+  "match": "Due to the fact that",
+  "severity": "warning",
+  "message": "Use 'because' instead of 'Due to the fact that'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 27,
+  "column": 106,
+  "check": "Zinsser.Clutter",
+  "match": "in the near future",
+  "severity": "warning",
+  "message": "Use 'soon' instead of 'in the near future'."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 29,
+  "column": 1,
+  "check": "Zinsser.WeaselWords",
+  "match": "Studies show",
+  "severity": "suggestion",
+  "message": "Vague quantifier 'Studies show'. Use a specific metric, number, or concrete example."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 29,
+  "column": 19,
+  "check": "Zinsser.Greybeard",
+  "match": "I've added",
+  "severity": "suggestion",
+  "message": "Reflexive slop detected ('I've added'). Cut it for a tighter, more professional tone."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 29,
+  "column": 30,
+  "check": "Zinsser.Greybeard",
+  "match": "fast, reliable, and scalable",
+  "severity": "suggestion",
+  "message": "Reflexive slop detected ('fast, reliable, and scalable'). Cut it for a tighter, more professional tone."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 29,
+  "column": 68,
+  "check": "Zinsser.Hedging",
+  "match": "Arguably",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'Arguably' unless strictly necessary."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 29,
+  "column": 82,
+  "check": "Zinsser.Hedging",
+  "match": "sort of",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'sort of' unless strictly necessary."
+ },
+ {
+  "file": "tests/style_corpus/mixed.md",
+  "line": 29,
+  "column": 96,
+  "check": "Zinsser.Hedging",
+  "match": "more or less",
+  "severity": "suggestion",
+  "message": "Cut weak qualifier or hedge 'more or less' unless strictly necessary."
+ }
+]
