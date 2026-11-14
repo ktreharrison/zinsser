@@ -196,7 +196,7 @@ fn main() -> Result<()> {
                     let mut diags = cadence.check_block(&block, &path_str, &content);
                     for d in &mut diags {
                         (d.line, d.column) =
-                            get_line_column(&content, block.start_byte.saturating_add(d.column));
+                            get_line_column(&content, block.source_offset(d.column));
                     }
                     all_diagnostics.extend(diags);
                 }

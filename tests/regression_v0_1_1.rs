@@ -5,10 +5,7 @@ use zinsser::scoring::compute_grade;
 use zinsser::user_dictionary::load_user_dictionary;
 
 fn block(text: &str) -> ProseBlock {
-    ProseBlock {
-        text: text.to_string(),
-        start_byte: 0,
-    }
+    ProseBlock::new(text.to_string(), 0)
 }
 
 /// tkmd README sentence that v0.1.0 flagged with "Reader waits 19 words"
