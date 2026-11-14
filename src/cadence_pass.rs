@@ -45,24 +45,22 @@ impl CadencePass {
     }
 
     pub fn split_sentences(text: &str) -> Vec<&str> {
+        // One pass over (byte index, char) pairs. The previous version called
+        // `char_indices().nth(i)` per terminator, which is quadratic on long
+        // paragraphs.
         let mut sentences = Vec::new();
         let mut start = 0;
-        let chars: Vec<char> = text.chars().collect();
+        let indexed: Vec<(usize, char)> = text.char_indices().collect();
+        let chars: Vec<char> = indexed.iter().map(|&(_, c)| c).collect();
 
-        for i in 0..chars.len() {
-            let c = chars[i];
+        for (i, &(byte_idx, c)) in indexed.iter().enumerate() {
             if c == '.' || c == '!' || c == '?' {
-                if Self::is_abbreviation_at(text, &chars, i) {
+                if Self::is_abbreviation_at(&chars, i) {
                     continue;
                 }
-
-                let byte_idx = text
-                    .char_indices()
-                    .nth(i)
-                    .map(|(idx, _)| idx)
-                    .unwrap_or(text.len());
-                sentences.push(&text[start..byte_idx + 1]);
-                start = byte_idx + 1;
+                let end = byte_idx + c.len_utf8();
+                sentences.push(&text[start..end]);
+                start = end;
             }
         }
         if start < text.len() {
@@ -71,7 +69,16 @@ impl CadencePass {
         sentences
     }
 
-    fn is_abbreviation_at(_text: &str, chars: &[char], i: usize) -> bool {
+    /// Byte offset of the first non-whitespace character of `sentence`
+    /// within `text`. `sentence` must be a slice of `text`. Sentences after
+    /// the first start with the space that followed the previous terminator;
+    /// pointing at that space put every diagnostic one column early.
+    fn sentence_offset(text: &str, sentence: &str) -> usize {
+        let leading = sentence.len() - sentence.trim_start().len();
+        sentence.as_ptr() as usize - text.as_ptr() as usize + leading
+    }
+
+    fn is_abbreviation_at(chars: &[char], i: usize) -> bool {
         if chars[i] != '.' {
             return false;
         }
@@ -88,8 +95,13 @@ impl CadencePass {
             return true;
         }
 
-        let prefix: String = chars[..=i].iter().collect();
-        let last_token = prefix.split_whitespace().last().unwrap_or("");
+        // Last whitespace-delimited token ending at `i`. Scanning back from
+        // `i` replaces collecting the whole prefix on every period.
+        let token_start = chars[..=i]
+            .iter()
+            .rposition(|c| c.is_whitespace())
+            .map_or(0, |p| p + 1);
+        let last_token: String = chars[token_start..=i].iter().collect();
         let clean_token = last_token
             .trim_start_matches(|c: char| !c.is_alphanumeric())
             .to_lowercase();
@@ -324,7 +336,7 @@ impl CadencePass {
                 let max_len = *window.iter().max().unwrap();
                 if min_len >= 8 && (max_len - min_len) <= 5 {
                     let relative_byte_offset =
-                        sentences[i].as_ptr() as usize - block.text.as_ptr() as usize;
+                        Self::sentence_offset(&block.text, valid_sentences[i]);
                     diagnostics.push(Diagnostic {
                         file: file_path.to_string(),
                         line: 0,
@@ -342,7 +354,7 @@ impl CadencePass {
         for sent in &valid_sentences {
             let words: Vec<&str> = sent.split_whitespace().collect();
             if words.len() > 18 {
-                let relative_byte_offset = sent.as_ptr() as usize - block.text.as_ptr() as usize;
+                let relative_byte_offset = Self::sentence_offset(&block.text, sent);
                 if let Some(idx) = self.find_first_verb_index(&words) {
                     if idx >= 14 {
                         let verb = Self::normalize_token(words[idx]);
@@ -449,7 +461,7 @@ impl CadencePass {
                 }
                 if cold_starts >= 3 {
                     let relative_byte_offset =
-                        sentences[i + 1].as_ptr() as usize - block.text.as_ptr() as usize;
+                        Self::sentence_offset(&block.text, valid_sentences[i + 1]);
                     diagnostics.push(Diagnostic {
                         file: file_path.to_string(),
                         line: 0,
