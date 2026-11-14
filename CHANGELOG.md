@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1] - Unreleased
+
+- Add `zinsser --version` (and `-V`); it was rejected as an unexpected argument.
+- Treat a link that is the whole item of a numbered list (`1. [Deutsche](README.de.md)`) as a link-only line, like bulleted ones, so its label is not spell-checked. Numbered-list prose is still checked. (Sourcery review of #4.)
+- Look up link-only lines by binary search instead of scanning them for every spelling finding, which was quadratic on large navigation lists. (Sourcery review of #4.)
+- An explicit `--dictionary` that is over the 1 MB cap or has no usable words is now an error instead of being skipped or silently replaced by the curated dictionary. The optional default `.zinsser/dictionary.txt` still only warns. (Sourcery review of #3.)
+- Security scanners flag `zip` 7.4.0 in `Cargo.lock` (CVE-2026-115905 and others). It is not compiled into zinsser: it belongs to `candle-core`, reached only through burn's optional `burn-candle` backend, which zinsser does not enable (`cargo tree -i zip -e all --target all` prints nothing). Cargo locks optional dependencies anyway, and `candle-core` 0.9.2 requires zip 7.x while the fixes are in 9.x, so the entry stays until upstream moves.
+
 ## [0.2.0] - 2026-11-14
 
 ### Breaking changes (library API)
