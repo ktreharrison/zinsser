@@ -278,3 +278,30 @@ fn issue_1_early_verb_in_wrapped_sentence_is_not_delayed() {
     );
     assert_eq!(locate(content, "Cadence.DelayedVerb"), None);
 }
+
+/// Issue #2: Harper's spelling check is English-only, so words with letters
+/// outside ASCII (translation lists: Français, Türkçe, दी) are not reported,
+/// while English typos still are.
+#[test]
+fn spelling_skips_non_english_words_but_keeps_english_typos() {
+    let spelled = |text: &str| -> Vec<String> {
+        zinsser::harper_pass::HarperPass::lint(text, "t.md")
+            .unwrap()
+            .into_iter()
+            .filter(|d| d.rule_id == "Harper.Spelling")
+            .map(|d| d.message)
+            .collect()
+    };
+    let list = "- [Français](README.fr.md)\n- [Türkçe](README.tr.md)\n- [हिन्दी](README.hi.md)\n";
+    assert_eq!(
+        spelled(list),
+        Vec::<String>::new(),
+        "non-English words must not be flagged"
+    );
+    let typo = spelled("We fixed teh bug.");
+    assert_eq!(
+        typo.len(),
+        1,
+        "English typo must still be flagged: {typo:?}"
+    );
+}
