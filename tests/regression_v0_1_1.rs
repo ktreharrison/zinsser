@@ -147,15 +147,26 @@ fn vale_passive_voice_regex_semantics() {
         })
         .collect();
     assert!(!exceptions.is_empty(), "exceptions list must exist");
-    assert!(
-        exceptions.iter().any(|e| e.is_match("She was tired.")),
-        "adjective exception must cover 'was tired'"
-    );
-    assert!(
-        !exceptions
-            .iter()
-            .any(|e| e.is_match("The report was written by the team.")),
+    // Vale tests exceptions against the matched token text, not the whole
+    // sentence. Tokens form one alternation, so the first that matches wins.
+    let alternation = regex::Regex::new(
+        &token_res.iter().map(|re| format!("(?:{})", re.as_str())).collect::<Vec<_>>().join("|"),
+    )
+    .unwrap();
+    let alert = |text: &str| -> Option<String> {
+        let found = alternation.find(text)?.as_str().to_string();
+        (!exceptions.iter().any(|e| e.is_match(&found))).then_some(found)
+    };
+    assert_eq!(alert("She was tired."), None, "adjective exception must cover 'was tired'");
+    assert_eq!(
+        alert("The report was written by the team.").as_deref(),
+        Some("was written by"),
         "exceptions must not swallow true passives"
+    );
+    assert_eq!(
+        alert("The users were confused by the instructions.").as_deref(),
+        Some("were confused by"),
+        "a by-agent passive must survive the adjective exception"
     );
 }
 
