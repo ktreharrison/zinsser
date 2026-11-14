@@ -65,6 +65,18 @@ enum Kind {
     },
 }
 
+/// Rules Zinsser implements natively elsewhere (the cadence pass), so neither
+/// this engine nor Vale needs to run them.
+pub const NATIVE_RULES: [&str; 1] = ["CadenceMonotony"];
+
+/// Result of reading one rule file.
+pub enum ParseOutcome {
+    /// The engine runs this rule exactly as Vale would.
+    Rule(StyleRule),
+    /// Only Vale can run this rule faithfully; the string says why.
+    NeedsVale(String),
+}
+
 pub struct StyleRule {
     /// `Style.Rule`, matching Vale's `Check` field.
     pub name: String,
@@ -126,9 +138,9 @@ fn exceptions_regex(doc: &Yaml, ignorecase: bool, rule: &str) -> Result<Option<R
 }
 
 impl StyleRule {
-    /// Parse one Vale rule file. Returns `Ok(None)` for rule types this engine
-    /// does not implement.
-    pub fn parse(style: &str, rule: &str, yaml: &str) -> Result<Option<Self>> {
+    /// Parse one Vale rule file. Rules the engine cannot reproduce exactly are
+    /// returned as `NeedsVale` instead of being approximated.
+    pub fn parse(style: &str, rule: &str, yaml: &str) -> Result<ParseOutcome> {
         let name = format!("{style}.{rule}");
         let docs =
             YamlLoader::load_from_str(yaml).with_context(|| format!("{name}: invalid YAML"))?;
@@ -139,14 +151,36 @@ impl StyleRule {
         let message = doc["message"].as_str().unwrap_or("").to_string();
         let severity = severity_of(doc["level"].as_str());
         let flag = case_flag(ignorecase);
+        // `nonword: true` drops Vale's \b...\b wrapping around the tokens.
+        let nonword = doc["nonword"].as_bool().unwrap_or(false);
+        // Only the default scope (`text`, the whole prose) is implemented.
+        if let Some(scope) = doc["scope"]
+            .as_str()
+            .or_else(|| doc["scope"].as_vec().map(|_| "a scope list"))
+        {
+            if scope != "text" {
+                return Ok(ParseOutcome::NeedsVale(format!("scope `{scope}`")));
+            }
+        }
 
         let kind = match doc["extends"].as_str() {
             Some("existence") => {
                 let tokens = strings(&doc["tokens"]);
-                if tokens.is_empty() {
-                    return Err(anyhow!("{name}: existence rule has no tokens"));
+                let raw = strings(&doc["raw"]);
+                if tokens.is_empty() && raw.is_empty() {
+                    return Err(anyhow!("{name}: existence rule has no tokens or raw"));
                 }
-                let source = format!(r"{flag}\b(?:{})\b", alternation(&tokens));
+                // Vale's construction: the token group (word-bounded unless
+                // nonword, and empty when there are no tokens) followed directly
+                // by the raw pieces joined with nothing between them.
+                let token_group = if tokens.is_empty() {
+                    String::from("(?:)")
+                } else if nonword {
+                    format!("(?:{})", alternation(&tokens))
+                } else {
+                    format!(r"(?:\b(?:{})\b)", alternation(&tokens))
+                };
+                let source = format!("{flag}{token_group}{}", raw.concat());
                 Kind::Existence {
                     pattern: Regex::new(&source)
                         .with_context(|| format!("{name}: invalid token regex"))?,
@@ -172,7 +206,11 @@ impl StyleRule {
                     keys.push(key.to_string());
                     swaps.push((anchored, replacement));
                 }
-                let source = format!(r"{flag}\b(?:{})\b", alternation(&keys));
+                let source = if nonword {
+                    format!("{flag}(?:{})", alternation(&keys))
+                } else {
+                    format!(r"{flag}\b(?:{})\b", alternation(&keys))
+                };
                 Kind::Substitution {
                     pattern: Regex::new(&source)
                         .with_context(|| format!("{name}: invalid swap regex"))?,
@@ -180,9 +218,10 @@ impl StyleRule {
                     swaps,
                 }
             }
-            _ => return Ok(None),
+            Some(other) => return Ok(ParseOutcome::NeedsVale(format!("rule type `{other}`"))),
+            None => return Err(anyhow!("{name}: missing `extends`")),
         };
-        Ok(Some(Self {
+        Ok(ParseOutcome::Rule(Self {
             name,
             severity,
             message,
@@ -253,20 +292,76 @@ pub enum RuleSource {
 pub struct StylePass {
     rules: Vec<StyleRule>,
     pub source: RuleSource,
+    /// Rules in the style that only Vale can run faithfully, with the reason.
+    /// `check` hands these to an installed Vale; `score` leaves them out.
+    pub needs_vale: Vec<HandOff>,
+    /// Alerts below this level are dropped, like Vale's `MinAlertLevel`.
+    min_level: Severity,
+    /// Configuration this engine does not apply (for example `Vocab`), to be
+    /// reported rather than ignored.
+    pub unsupported_config: Vec<String>,
+}
+
+fn level_rank(severity: &Severity) -> u8 {
+    match severity {
+        Severity::Suggestion => 0,
+        Severity::Warning => 1,
+        Severity::Error => 2,
+    }
+}
+
+/// A rule handed to Vale: `(Style.Rule, reason)`.
+pub type HandOff = (String, String);
+
+fn collect(
+    outcomes: impl IntoIterator<Item = (String, Result<ParseOutcome>)>,
+) -> Result<(Vec<StyleRule>, Vec<HandOff>)> {
+    let mut rules = Vec::new();
+    let mut needs_vale = Vec::new();
+    for (rule, outcome) in outcomes {
+        if NATIVE_RULES.contains(&rule.as_str()) {
+            continue;
+        }
+        match outcome? {
+            ParseOutcome::Rule(parsed) => rules.push(parsed),
+            ParseOutcome::NeedsVale(reason) => needs_vale.push((format!("{STYLE}.{rule}"), reason)),
+        }
+    }
+    Ok((rules, needs_vale))
 }
 
 impl StylePass {
     pub fn bundled() -> Self {
-        let rules = BUNDLED_RULES
-            .iter()
-            .filter_map(|(rule, yaml)| {
-                StyleRule::parse(STYLE, rule, yaml).expect("bundled rules are valid")
-            })
-            .collect();
+        let (rules, needs_vale) = collect(
+            BUNDLED_RULES
+                .iter()
+                .map(|(rule, yaml)| (rule.to_string(), StyleRule::parse(STYLE, rule, yaml))),
+        )
+        .expect("bundled rules are valid");
+        assert!(
+            needs_vale.is_empty(),
+            "bundled rules must all run built in: {needs_vale:?}"
+        );
         Self {
             rules,
             source: RuleSource::Bundled,
+            needs_vale,
+            min_level: Severity::Suggestion,
+            unsupported_config: Vec::new(),
         }
+    }
+
+    fn with_config(mut self, config: &ValeConfig) -> Self {
+        if let Some(level) = &config.min_alert_level {
+            self.min_level = severity_of(Some(level));
+        }
+        if !config.vocab.is_empty() {
+            self.unsupported_config.push(format!(
+                "Vocab = {} (accepted and rejected terms are applied by Vale only)",
+                config.vocab.join(", ")
+            ));
+        }
+        self
     }
 
     /// Rules for the project containing `anchor`: the project's own
@@ -278,7 +373,7 @@ impl StylePass {
         };
         let dir = config.styles_path.join(STYLE);
         if !dir.is_dir() {
-            return Ok(Self::bundled());
+            return Ok(Self::bundled().with_config(&config));
         }
         let mut entries: Vec<PathBuf> = std::fs::read_dir(&dir)
             .with_context(|| format!("cannot read {}", dir.display()))?
@@ -286,25 +381,30 @@ impl StylePass {
             .filter(|p| p.extension().is_some_and(|x| x == "yml" || x == "yaml"))
             .collect();
         entries.sort();
-        let mut rules = Vec::new();
+        let mut outcomes = Vec::new();
         for path in entries {
             let rule = path
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("")
                 .to_string();
-            let yaml = std::fs::read_to_string(&path)
-                .with_context(|| format!("cannot read {}", path.display()))?;
-            if let Some(parsed) = StyleRule::parse(STYLE, &rule, &yaml)
-                .with_context(|| format!("in {}", path.display()))?
-            {
-                rules.push(parsed);
-            }
+            let outcome = std::fs::read_to_string(&path)
+                .with_context(|| format!("cannot read {}", path.display()))
+                .and_then(|yaml| {
+                    StyleRule::parse(STYLE, &rule, &yaml)
+                        .with_context(|| format!("in {}", path.display()))
+                });
+            outcomes.push((rule, outcome));
         }
+        let (rules, needs_vale) = collect(outcomes)?;
         Ok(Self {
             rules,
             source: RuleSource::Project(dir),
-        })
+            needs_vale,
+            min_level: Severity::Suggestion,
+            unsupported_config: Vec::new(),
+        }
+        .with_config(&config))
     }
 
     pub fn rule_names(&self) -> Vec<&str> {
@@ -317,6 +417,9 @@ impl StylePass {
         let mut diagnostics = Vec::new();
         for block in extract_style_blocks(content) {
             for rule in &self.rules {
+                if level_rank(&rule.severity) < level_rank(&self.min_level) {
+                    continue;
+                }
                 for (start, _matched, message, fix) in rule.matches(&block.text) {
                     let (line, column) = get_line_column(content, block.source_offset(start));
                     diagnostics.push(Diagnostic {
@@ -344,6 +447,8 @@ pub struct ValeConfig {
     pub styles_path: PathBuf,
     /// Every style named in a `BasedOnStyles` line.
     pub based_on_styles: Vec<String>,
+    pub min_alert_level: Option<String>,
+    pub vocab: Vec<String>,
 }
 
 impl ValeConfig {
@@ -378,12 +483,21 @@ pub fn vale_config(anchor: &Path) -> Option<ValeConfig> {
     let dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
     let mut styles_path = dir.join("styles");
     let mut based_on_styles = Vec::new();
+    let mut min_alert_level = None;
+    let mut vocab = Vec::new();
     for line in text.lines() {
         let Some((key, value)) = line.split_once('=') else {
             continue;
         };
         match key.trim() {
             "StylesPath" => styles_path = dir.join(value.trim()),
+            "MinAlertLevel" => min_alert_level = Some(value.trim().to_lowercase()),
+            "Vocab" => vocab.extend(
+                value
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty()),
+            ),
             "BasedOnStyles" => based_on_styles.extend(
                 value
                     .split(',')
@@ -399,5 +513,7 @@ pub fn vale_config(anchor: &Path) -> Option<ValeConfig> {
         path,
         styles_path,
         based_on_styles,
+        min_alert_level,
+        vocab,
     })
 }

@@ -165,8 +165,34 @@ fn main() -> Result<()> {
             } else {
                 Some(StylePass::for_project(&path)?)
             };
-            let external_vale =
-                !no_vale && vale_config(&path).is_some_and(|c| !c.external_styles().is_empty());
+            // Rules only Vale can run faithfully: the built-in engine's
+            // hand-offs plus any other styles named in .vale.ini.
+            let needs_vale: Vec<String> = styles
+                .iter()
+                .flat_map(|s| s.needs_vale.iter().map(|(name, _)| name.clone()))
+                .collect();
+            let external_styles: Vec<String> = vale_config(&path)
+                .map(|c| c.external_styles().iter().map(|s| s.to_string()).collect())
+                .unwrap_or_default();
+            let mut external_vale =
+                !no_vale && (!needs_vale.is_empty() || !external_styles.is_empty());
+            if let Some(styles) = &styles {
+                for note in &styles.unsupported_config {
+                    eprintln!("Note: built-in style rules do not apply {note}.");
+                }
+            }
+            if external_vale && !ValeRunner::available() {
+                external_vale = false;
+                let mut skipped: Vec<String> = styles
+                    .iter()
+                    .flat_map(|s| s.needs_vale.iter().map(|(n, why)| format!("{n} ({why})")))
+                    .collect();
+                skipped.extend(external_styles.iter().map(|s| format!("style {s}")));
+                eprintln!(
+                    "Note: 'vale' is not installed, so these were not checked: {}.",
+                    skipped.join(", ")
+                );
+            }
             let files = collect_markdown_files(path)?;
             let mut pass_failed = false;
             let mut all_diagnostics = Vec::new();
@@ -209,7 +235,7 @@ fn main() -> Result<()> {
                     all_diagnostics.extend(styles.check(&content, &path_str));
                 }
                 if external_vale {
-                    match ValeRunner::run(&path_str) {
+                    match ValeRunner::run(&path_str, &needs_vale) {
                         Ok(diags) => all_diagnostics.extend(diags),
                         Err(e) => {
                             pass_failed = true;
@@ -261,7 +287,15 @@ fn main() -> Result<()> {
             for block in &blocks {
                 lint_diagnostics.extend(cadence.check_block(block, &path_str, &content));
             }
-            lint_diagnostics.extend(StylePass::for_project(&path)?.check(&content, &path_str));
+            let styles = StylePass::for_project(&path)?;
+            lint_diagnostics.extend(styles.check(&content, &path_str));
+            if !styles.needs_vale.is_empty() {
+                let names: Vec<&str> = styles.needs_vale.iter().map(|(n, _)| n.as_str()).collect();
+                eprintln!(
+                    "Note: the grade leaves out rules that need Vale: {}.",
+                    names.join(", ")
+                );
+            }
             let lint_warnings = lint_diagnostics
                 .iter()
                 .filter(|d| matches!(d.severity, Severity::Warning))
