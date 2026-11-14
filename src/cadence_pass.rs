@@ -58,6 +58,14 @@ impl CadencePass {
                 if Self::is_abbreviation_at(&chars, i) {
                     continue;
                 }
+                // "..." and "?!" end one sentence, not three or two; split
+                // after the last terminator in the run.
+                if chars
+                    .get(i + 1)
+                    .is_some_and(|&next| next == '.' || next == '!' || next == '?')
+                {
+                    continue;
+                }
                 let end = byte_idx + c.len_utf8();
                 sentences.push(&text[start..end]);
                 start = end;

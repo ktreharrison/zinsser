@@ -345,6 +345,10 @@ mod tests {
         ));
         fs::create_dir_all(root.join("nested")).unwrap();
         fs::create_dir_all(root.join("target/nested")).unwrap();
+        fs::create_dir_all(root.join(".git")).unwrap();
+        fs::create_dir_all(root.join("node_modules/pkg")).unwrap();
+        fs::write(root.join(".git/notes.md"), "ignored").unwrap();
+        fs::write(root.join("node_modules/pkg/README.md"), "ignored").unwrap();
         fs::write(root.join("top.md"), "top").unwrap();
         fs::write(root.join("nested/deep.md"), "nested").unwrap();
         fs::write(root.join("target/nested/generated.md"), "ignored").unwrap();
