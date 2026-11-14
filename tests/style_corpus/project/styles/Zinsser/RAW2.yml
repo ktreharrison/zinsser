@@ -1,0 +1,6 @@
+extends: existence
+message: "raw2 %s"
+level: error
+raw:
+  - '\bfoo'
+  - '(?:bar|baz)\b'

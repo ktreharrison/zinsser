@@ -1,0 +1,7 @@
+extends: existence
+message: "nw %s"
+level: warning
+nonword: true
+tokens:
+  - '\(TODO\)'
+  - 'ing\b'
