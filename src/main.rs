@@ -14,7 +14,7 @@ use zinsser::user_dictionary::load_user_dictionary;
 use zinsser::vale_runner::ValeRunner;
 
 #[derive(Parser)]
-#[command(name = "zinsser")]
+#[command(name = "zinsser", version)]
 #[command(about = "Local-first prose linter and cadence engine", long_about = None)]
 struct Cli {
     #[command(subcommand)]
