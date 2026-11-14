@@ -13,6 +13,8 @@ The `zinsser` command line is compatible; these affect code that uses the crate 
 
 ### Changes
 
+- Do not spell-check a link that is the whole line, apart from a list marker or bullet (translation and navigation lists, #2), or the token harper-core reads across a link and a possessive (`[FastAPI](...)'s`). Links inside sentences are still checked. On five public READMEs this removes 23 of 115 spelling hits.
+- Strip symbol tables from release binaries (5.9 MB to 5.0 MB on macOS).
 - Do not report spelling for words containing non-ASCII letters (`Français`, `Türkçe`, `दी`): Harper checks English only, and translation lists were the main source of spelling noise (#2). English typos are still reported.
 - Detect delayed verbs with Harper's Brill part-of-speech tagger, recalibrate the scorecard grade, and add a project dictionary (`.zinsser/dictionary.txt`, `--dictionary`).
 - Fix cadence diagnostic locations: columns pointed one character early, and drifted further after any link, emphasis or inline code earlier in the paragraph.

@@ -30,6 +30,11 @@ default = ["pos-tagger"]
 pos-tagger = ["dep:harper-brill"]
 
 # The profile that 'dist' will build with
+# Drop symbol tables from shipped binaries (5.9 MB -> 5.0 MB on macOS);
+# panics still print their message. The dist profile inherits this.
+[profile.release]
+strip = true
+
 [profile.dist]
 inherits = "release"
 lto = "thin"
