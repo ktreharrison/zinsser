@@ -352,3 +352,96 @@ fn possessive_after_link_and_file_extensions_are_not_words() {
         Vec::<String>::new()
     );
 }
+
+/// Sourcery on #4: a link that is the whole item of a NUMBERED list is a
+/// navigation entry too; numbered-list prose is still checked.
+#[test]
+fn ordered_list_link_only_items_are_not_spell_checked() {
+    let lists = "1. [Deutsche](README.de.md)\n2. [Polskie readme](README.pl.md)\n10) [svenska](README.sv.md)\n";
+    assert_eq!(spelling_words(lists), Vec::<String>::new());
+    assert_eq!(spelling_words("1. We fixed teh bug.\n"), ["teh"]);
+}
+
+fn dict_dir(tag: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("zinsser-dicterr-{tag}-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.join(".zinsser")).unwrap();
+    dir
+}
+
+/// Sourcery on #3: an explicit --dictionary that is oversized or has no
+/// usable words must fail, not silently fall back to the curated dictionary.
+#[test]
+fn explicit_dictionary_that_is_oversized_or_empty_is_an_error() {
+    use zinsser::user_dictionary::load_user_dictionary;
+    let dir = dict_dir("explicit");
+    let big = dir.join("big.txt");
+    fs::write(&big, "word\n".repeat(300_000)).unwrap(); // 1.5 MB > 1 MB cap
+    let empty = dir.join("empty.txt");
+    fs::write(&empty, "# only comments\n\n").unwrap();
+    for (path, needle) in [(&big, "too large"), (&empty, "no usable words")] {
+        let err = load_user_dictionary(std::slice::from_ref(path), &dir)
+            .err()
+            .unwrap_or_else(|| panic!("{} should be an error", path.display()));
+        assert!(format!("{err:#}").contains(needle), "{err:#}");
+    }
+    fs::remove_dir_all(dir).unwrap();
+}
+
+/// The default .zinsser/dictionary.txt is optional: oversized or empty only
+/// warns and falls back.
+#[test]
+fn default_dictionary_that_is_oversized_or_empty_only_warns() {
+    use zinsser::user_dictionary::load_user_dictionary;
+    for (tag, contents) in [
+        ("dbig", "word\n".repeat(300_000)),
+        ("dempty", "# none\n".to_string()),
+    ] {
+        let dir = dict_dir(tag);
+        fs::write(dir.join(".zinsser/dictionary.txt"), contents).unwrap();
+        assert!(load_user_dictionary(&[], &dir).unwrap().is_none(), "{tag}");
+        fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+fn scratch(tag: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("zinsser-dict-{tag}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+/// Sourcery #5: "no usable words" is judged per file, not by how many words
+/// fit under the global cap, so an empty explicit file is an error even after
+/// earlier dictionaries filled the cap.
+#[test]
+fn empty_explicit_dictionary_is_an_error_even_after_the_cap() {
+    let dir = scratch("cap");
+    let full = dir.join("full.txt");
+    let words: String = (0..100_000).map(|i| format!("w{i}\n")).collect();
+    std::fs::write(&full, words).unwrap();
+    let empty = dir.join("empty.txt");
+    std::fs::write(&empty, "# only a comment\n").unwrap();
+    let result = zinsser::user_dictionary::load_user_dictionary(&[full, empty.clone()], &dir);
+    let error = result.err().expect("empty explicit file must be an error");
+    assert!(error.to_string().contains("no usable words"), "{error}");
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+/// Sourcery #5: an existing but empty default dictionary warns instead of
+/// silently using the curated dictionary only.
+#[test]
+fn empty_default_dictionary_warns() {
+    let dir = scratch("default");
+    std::fs::create_dir_all(dir.join(".zinsser")).unwrap();
+    std::fs::write(dir.join(".zinsser/dictionary.txt"), "# nothing yet\n").unwrap();
+    std::fs::write(dir.join("a.md"), "We ship it.\n").unwrap();
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_zinsser"))
+        .args(["check", "a.md", "--no-vale", "--format", "json"])
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("has no usable words"), "stderr: {stderr}");
+    std::fs::remove_dir_all(dir).unwrap();
+}
