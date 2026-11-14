@@ -6,6 +6,9 @@
 - Treat a link that is the whole item of a numbered list (`1. [Deutsche](README.de.md)`) as a link-only line, like bulleted ones, so its label is not spell-checked. Numbered-list prose is still checked. (Sourcery review of #4.)
 - Look up link-only lines by binary search instead of scanning them for every spelling finding, which was quadratic on large navigation lists. (Sourcery review of #4.)
 - An explicit `--dictionary` that is over the 1 MB cap or has no usable words is now an error instead of being skipped or silently replaced by the curated dictionary. The optional default `.zinsser/dictionary.txt` still only warns. (Sourcery review of #3.)
+- Only treat `1.` or `2)` as a list marker when whitespace follows it, as in CommonMark; `3.[link](x)` starts a paragraph and its link text is still spell-checked. (Sourcery review of #5.)
+- Judge "no usable words" per dictionary file, so an empty explicit file is an error even after earlier dictionaries filled the 100,000-word cap; warn when the default `.zinsser/dictionary.txt` exists but is empty; read dictionaries through one bounded read so the 1 MB cap holds even if the file changes while being read. (Sourcery review of #5.)
+- Compute Harper finding columns from a precomputed table; a per-finding scan from the start of the file was quadratic in the number of findings.
 - Security scanners flag `zip` 7.4.0 in `Cargo.lock` (CVE-2026-115905 and others). It is not compiled into zinsser: it belongs to `candle-core`, reached only through burn's optional `burn-candle` backend, which zinsser does not enable (`cargo tree -i zip -e all --target all` prints nothing). Cargo locks optional dependencies anyway, and `candle-core` 0.9.2 requires zip 7.x while the fixes are in 9.x, so the entry stays until upstream moves.
 
 ## [0.2.0] - 2026-11-14

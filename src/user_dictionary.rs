@@ -37,6 +37,10 @@ pub fn load_user_dictionary(
 
     if let Some(default_path) = find_project_dictionary(anchor) {
         match read_words(&default_path, &mut words) {
+            ReadOutcome::Read { usable: 0 } => eprintln!(
+                "Dictionary file {} has no usable words; using the curated dictionary only",
+                default_path.display()
+            ),
             ReadOutcome::Read { .. } => {}
             ReadOutcome::TooLarge(len) => eprintln!(
                 "Dictionary file {} is too large ({} bytes, max {}); skipping",
@@ -54,7 +58,7 @@ pub fn load_user_dictionary(
             bail!("Dictionary file not found: {}", path.display());
         }
         match read_words(path, &mut words) {
-            ReadOutcome::Read { added: 0 } if words.len() < MAX_DICTIONARY_WORDS => {
+            ReadOutcome::Read { usable: 0 } => {
                 bail!("Dictionary file {} has no usable words", path.display())
             }
             ReadOutcome::Read { .. } => {}
@@ -132,19 +136,38 @@ pub fn find_project_dictionary(anchor: &Path) -> Option<PathBuf> {
 /// What reading one dictionary file produced. The caller decides whether a
 /// problem is a warning (default file) or an error (explicit file).
 enum ReadOutcome {
-    Read { added: usize },
+    /// `usable` counts the file's valid entries, whether or not the global
+    /// word cap let them all in, so "empty file" does not depend on what
+    /// other dictionaries loaded first.
+    Read {
+        usable: usize,
+    },
     TooLarge(u64),
     Unreadable(String),
 }
 
-fn read_words(path: &Path, words: &mut Vec<String>) -> ReadOutcome {
-    match std::fs::metadata(path) {
-        Ok(meta) if meta.len() > MAX_DICTIONARY_BYTES => return ReadOutcome::TooLarge(meta.len()),
-        Err(error) => return ReadOutcome::Unreadable(error.to_string()),
-        _ => {}
+/// Read at most `MAX_DICTIONARY_BYTES + 1` bytes through one open handle, so
+/// the size check and the read see the same file even if it is replaced or
+/// grows meanwhile.
+fn read_capped(path: &Path) -> Result<String, ReadOutcome> {
+    use std::io::Read;
+    let file = std::fs::File::open(path).map_err(|e| ReadOutcome::Unreadable(e.to_string()))?;
+    let mut bytes = Vec::new();
+    file.take(MAX_DICTIONARY_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| ReadOutcome::Unreadable(e.to_string()))?;
+    if bytes.len() as u64 > MAX_DICTIONARY_BYTES {
+        let len = std::fs::metadata(path).map_or(bytes.len() as u64, |m| m.len());
+        return Err(ReadOutcome::TooLarge(len.max(bytes.len() as u64)));
     }
-    let before = words.len();
-    match std::fs::read_to_string(path) {
+    String::from_utf8(bytes).map_err(|e| ReadOutcome::Unreadable(e.to_string()))
+}
+
+fn read_words(path: &Path, words: &mut Vec<String>) -> ReadOutcome {
+    let mut usable = 0;
+    let mut cap_reported = false;
+    match read_capped(path) {
+        Err(outcome) => outcome,
         Ok(contents) => {
             for line in contents.lines() {
                 let word = line.trim();
@@ -160,20 +183,21 @@ fn read_words(path: &Path, words: &mut Vec<String>) -> ReadOutcome {
                     );
                     continue;
                 }
+                usable += 1;
                 if words.len() >= MAX_DICTIONARY_WORDS {
-                    eprintln!(
-                        "Dictionary word cap ({}) reached while reading {}; remaining entries ignored",
-                        MAX_DICTIONARY_WORDS,
-                        path.display()
-                    );
-                    break;
+                    if !cap_reported {
+                        eprintln!(
+                            "Dictionary word cap ({}) reached while reading {}; remaining entries ignored",
+                            MAX_DICTIONARY_WORDS,
+                            path.display()
+                        );
+                        cap_reported = true;
+                    }
+                    continue;
                 }
                 words.push(word.to_string());
             }
-            ReadOutcome::Read {
-                added: words.len() - before,
-            }
+            ReadOutcome::Read { usable }
         }
-        Err(error) => ReadOutcome::Unreadable(error.to_string()),
     }
 }
