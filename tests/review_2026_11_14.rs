@@ -138,7 +138,7 @@ fn close(a: f64, b: f64) -> bool {
 #[cfg(feature = "pos-tagger")]
 const SLOP_SV: f64 = 5.0;
 #[cfg(not(feature = "pos-tagger"))]
-const SLOP_SV: f64 = 3.2;
+const SLOP_SV: f64 = 3.8; // 3.2 with harper-core 0.16 metadata
 #[cfg(feature = "pos-tagger")]
 const CLEAN_SV: f64 = 1.4;
 #[cfg(not(feature = "pos-tagger"))]
@@ -303,5 +303,74 @@ fn spelling_skips_non_english_words_but_keeps_english_typos() {
         typo.len(),
         1,
         "English typo must still be flagged: {typo:?}"
+    );
+}
+
+/// harper-core 3.2.0 rules SeemsLikeAdjective and ExpandIme print a debug
+/// line to stderr on every match; zinsser disables them.
+#[test]
+fn harper_debug_output_does_not_reach_stderr() {
+    let dir = std::env::temp_dir().join(format!("zinsser-stderr-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    // From rich 3a109cc README line 419; triggered SeemsLikeAdjective.
+    std::fs::write(
+        dir.join("t.md"),
+        "Here's what it looks like on OSX (similar on Linux):\n",
+    )
+    .unwrap();
+    let out = std::process::Command::new(env!("CARGO_BIN_EXE_zinsser"))
+        .args(["check", "t.md", "--no-vale", "--format", "json"])
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(!stderr.contains('🚨'), "stderr: {stderr}");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+fn spelling_words(text: &str) -> Vec<String> {
+    zinsser::harper_pass::HarperPass::lint(text, "t.md")
+        .unwrap()
+        .into_iter()
+        .filter(|d| d.rule_id == "Harper.Spelling")
+        .map(|d| {
+            let start = d.column;
+            text[start..]
+                .split(|c: char| !c.is_alphanumeric() && c != '_')
+                .next()
+                .unwrap_or("")
+                .to_string()
+        })
+        .collect()
+}
+
+/// Issue #2 remainder: links that are the whole line (translation lists) are
+/// not spell-checked, as a Markdown list or as `•` lines in a paragraph.
+#[test]
+fn link_only_lines_are_not_spell_checked() {
+    let lists = "- [Deutsche](README.de.md)\n- [Polskie readme](README.pl.md)\n\nIntro:\n • [svenska](README.sv.md)\n • [brasileiro readme](README.pt.md)\n";
+    assert_eq!(spelling_words(lists), Vec::<String>::new());
+}
+
+#[test]
+fn typos_in_list_prose_and_sentence_links_are_still_flagged() {
+    assert_eq!(spelling_words("- We fixed teh bug.\n"), ["teh"]);
+    assert_eq!(
+        spelling_words("See the [teh guide](guide.md) for details.\n"),
+        ["teh"]
+    );
+}
+
+#[test]
+fn possessive_after_link_and_file_extensions_are_not_words() {
+    // typer 00381d6 README: `[FastAPI](...)'s` flagged `s`.
+    assert_eq!(
+        spelling_words("It is [Python](https://www.python.org)'s little sibling.\n"),
+        Vec::<String>::new()
+    );
+    // rich 3a109cc README: `table_movie.py` flagged `py`.
+    assert_eq!(
+        spelling_words("Run [table_movie.py](https://example.com/t.py) now.\n"),
+        Vec::<String>::new()
     );
 }
