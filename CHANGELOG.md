@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.1] - Unreleased
+## [0.2.1] - 2026-11-14
 
 - Add `zinsser --version` (and `-V`); it was rejected as an unexpected argument.
 - Treat a link that is the whole item of a numbered list (`1. [Deutsche](README.de.md)`) as a link-only line, like bulleted ones, so its label is not spell-checked. Numbered-list prose is still checked. (Sourcery review of #4.)
