@@ -59,6 +59,14 @@ fn link_only_line_ranges(content: &str) -> Vec<Range<usize>> {
     out
 }
 
+/// Whether `pos` falls inside one of `ranges`, which must be sorted by start
+/// and non-overlapping (links do not nest, and the parser reports them in
+/// source order).
+fn in_sorted_ranges(ranges: &[Range<usize>], pos: usize) -> bool {
+    let i = ranges.partition_point(|r| r.start <= pos);
+    i > 0 && ranges[i - 1].contains(&pos)
+}
+
 /// Spelling lints on tokens that are not words. harper-core 0.16 reads a
 /// possessive right after a link as one token with the link target
 /// (`FastAPI](https://fastapi.tiangolo.com)'s`); other versions flag only the
@@ -99,7 +107,8 @@ impl HarperPass {
         let chars: Vec<char> = content.chars().collect();
         // Harper spans are char indices; map them to byte offsets once.
         let byte_of: Vec<usize> = content.char_indices().map(|(b, _)| b).collect();
-        let link_only = link_only_line_ranges(content);
+        let mut link_only = link_only_line_ranges(content);
+        link_only.sort_by_key(|r| r.start);
         let mut diagnostics = Vec::new();
         for lint in lints {
             if matches!(lint.lint_kind, LintKind::Spelling) {
@@ -109,7 +118,7 @@ impl HarperPass {
                     .unwrap_or(content.len());
                 if is_non_english_word(&chars, lint.span.start, lint.span.end)
                     || is_not_a_word(&chars, lint.span.start, lint.span.end)
-                    || link_only.iter().any(|r| r.contains(&start_byte))
+                    || in_sorted_ranges(&link_only, start_byte)
                 {
                     continue;
                 }
@@ -129,5 +138,38 @@ impl HarperPass {
         }
 
         Ok(diagnostics)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::in_sorted_ranges;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn sorted_range_lookup_matches_a_linear_scan() {
+        let ranges = vec![2..5, 10..11, 20..30];
+        for pos in 0..35 {
+            let linear = ranges.iter().any(|r| r.contains(&pos));
+            assert_eq!(in_sorted_ranges(&ranges, pos), linear, "pos {pos}");
+        }
+        assert!(!in_sorted_ranges(&[], 3));
+    }
+
+    #[test]
+    fn sorted_range_lookup_scales_to_large_link_lists() {
+        // 100k link-only lines and 100k lookups: a linear scan per lookup is
+        // ~10^10 comparisons (minutes); binary search is ~1.7 * 10^6.
+        let ranges: Vec<_> = (0..100_000).map(|i| i * 10..i * 10 + 5).collect();
+        let start = Instant::now();
+        let hits = (0..100_000)
+            .filter(|&i| in_sorted_ranges(&ranges, i * 10 + 2))
+            .count();
+        assert_eq!(hits, 100_000);
+        assert!(
+            start.elapsed() < Duration::from_secs(2),
+            "took {:?}",
+            start.elapsed()
+        );
     }
 }
