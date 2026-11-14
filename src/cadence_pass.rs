@@ -23,7 +23,7 @@ impl CadencePass {
         Self {
             dictionary,
             tagger: brill_tagger(),
-            abstract_noun_regex: Regex::new(r"\b[a-zA-Z]{4,}(?:tion|sion|ment|ence|ance|ibility|ability|ization|isation|ality|osity|itude)(?:s)?\b").unwrap(),
+            abstract_noun_regex: Regex::new(r"(?i)\b[a-z]{4,}(?:tion|sion|ment|ence|ance|ibility|ability|ization|isation|ality|osity|itude)(?:s)?\b").unwrap(),
             stop_words: ["the", "and", "a", "an", "of", "to", "in", "is", "it", "that", "as", "for", "was", "with", "on", "by"].iter().map(|s| s.to_string()).collect(),
             abstract_allowlist: [
                 "function", "functions", "document", "documents", "environment", "environments",
@@ -66,7 +66,18 @@ impl CadencePass {
                 {
                     continue;
                 }
-                let end = byte_idx + c.len_utf8();
+                // Closing quotes and brackets belong to the sentence they
+                // close; otherwise `"Go."` left a lone `"` to start the next
+                // sentence and count as a word.
+                let mut j = i + 1;
+                while chars
+                    .get(j)
+                    .is_some_and(|&next| matches!(next, '"' | '\'' | ')' | ']' | '”' | '’' | '»'))
+                {
+                    j += 1;
+                }
+                let end = indexed.get(j).map_or(text.len(), |&(b, _)| b);
+                debug_assert!(end >= byte_idx + c.len_utf8());
                 sentences.push(&text[start..end]);
                 start = end;
             }

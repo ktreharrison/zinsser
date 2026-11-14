@@ -191,3 +191,27 @@ fn one_non_spelling_suggestion_costs_nothing_two_cost_one_letter() {
         0
     );
 }
+
+#[test]
+fn closing_quotes_and_brackets_stay_with_their_sentence() {
+    let sentences: Vec<&str> = CadencePass::split_sentences("He said \"Go.\" She left. (It rained.) Done.")
+        .into_iter()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+    assert_eq!(sentences, ["He said \"Go.\"", "She left.", "(It rained.)", "Done."]);
+}
+
+#[test]
+fn abstract_density_ignores_case() {
+    let lower = "the implementation of the organization prioritization methodology requires facilitation of optimization and standardization of documentation plus rationalization of allocation and communication for transformation across departments while the team waits and we all hope for a result soon.";
+    let pass = CadencePass::new();
+    let density = |text: &str| {
+        pass.check_block(&zinsser::markdown::ProseBlock::new(text, 0), "t.md", "")
+            .into_iter()
+            .any(|d| d.rule_id == "Cadence.AbstractDensity")
+    };
+    assert!(lower.split_whitespace().count() >= 35);
+    assert!(density(lower), "lowercase paragraph must trigger the density warning");
+    assert!(density(&lower.to_uppercase()), "uppercase text must not bypass it");
+}
