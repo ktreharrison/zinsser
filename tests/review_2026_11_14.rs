@@ -215,3 +215,13 @@ fn abstract_density_ignores_case() {
     assert!(density(lower), "lowercase paragraph must trigger the density warning");
     assert!(density(&lower.to_uppercase()), "uppercase text must not bypass it");
 }
+
+#[test]
+fn scorecard_targets_match_the_grading_thresholds() {
+    use zinsser::scoring::{A_MAX_ABSTRACT_PCT, A_MAX_SV_DISTANCE};
+    // Exactly at the printed limit must still grade A; just over must not.
+    assert_eq!(compute_grade(6.2, 2.8, A_MAX_ABSTRACT_PCT, 1.4, 0, 0), 'A');
+    assert_ne!(compute_grade(6.2, 2.8, A_MAX_ABSTRACT_PCT + 0.1, 1.4, 0, 0), 'A');
+    assert_eq!(compute_grade(6.2, 2.8, 4.0, A_MAX_SV_DISTANCE, 0, 0), 'A');
+    assert_ne!(compute_grade(6.2, 2.8, 4.0, A_MAX_SV_DISTANCE + 0.1, 0, 0), 'A');
+}

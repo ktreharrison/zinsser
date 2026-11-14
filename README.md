@@ -73,10 +73,10 @@ zinsser score fixtures/clean_craft.md
 ```bash
 --- Craft Scorecard: fixtures/clean_craft.md ---
 Words: 75 | Sentences: 12
-Avg Sentence Length: 6.2
-Sentence Length StdDev: 2.8 (Target >= 5.0)
-Abstract Noun Density: 4.0% (Target < 4.0%)
-Avg Subject-Verb Distance: 1.8 (Target < 6.0)
+Avg Sentence Length: 6.2 (A needs <= 25.0)
+Sentence Length StdDev: 2.8 (A needs >= 5.0, or >= 1.0 when avg length < 10.0)
+Abstract Noun Density: 4.0% (A needs <= 4.0%)
+Avg Subject-Verb Distance: 1.4 (A needs <= 6.0)
 Lint Findings: 0 warnings, 0 errors, 0 suggestions (warnings cost one letter, errors two; spelling suggestions do not affect the grade)
 Overall Grade: A
 --------------------------------------------
