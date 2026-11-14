@@ -1,9 +1,9 @@
 use crate::types::{Diagnostic, Severity};
 use anyhow::Result;
+use colored::Colorize;
 use serde_json::Value;
 use std::process::Command;
 use std::sync::Once;
-use colored::Colorize;
 
 static VALE_MISSING_NOTICE: Once = Once::new();
 

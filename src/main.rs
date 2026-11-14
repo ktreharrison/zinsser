@@ -1,13 +1,13 @@
 use anyhow::Result;
-use zinsser::cadence_pass::CadencePass;
 use clap::{Parser, Subcommand};
 use harper_core::Dictionary;
 use harper_core::FullDictionary;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use zinsser::cadence_pass::CadencePass;
 use zinsser::harper_pass::HarperPass;
 use zinsser::markdown::{extract_prose_blocks, get_line_column};
 use zinsser::reporter::Reporter;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use zinsser::types::{Diagnostic, DocumentScore, Severity};
 use zinsser::user_dictionary::load_user_dictionary;
 use zinsser::vale_runner::ValeRunner;

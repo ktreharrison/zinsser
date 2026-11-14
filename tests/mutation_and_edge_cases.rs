@@ -9,16 +9,38 @@ fn test_mutation_monotony_breaker() {
                The database cluster handled the heavy traffic load without issue. \
                Our monitoring dashboard showed a steady decrease in tail latency. \
                The product manager approved the rollout for all regional users.";
-    let diags_before = pass.check_block(&ProseBlock { text: bad.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_before.iter().any(|d| d.rule_id == "Cadence.Monotony"), "Should flag monotonous 4-sentence block");
+    let diags_before = pass.check_block(
+        &ProseBlock {
+            text: bad.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(
+        diags_before.iter().any(|d| d.rule_id == "Cadence.Monotony"),
+        "Should flag monotonous 4-sentence block"
+    );
 
     // AFTER MUTATION: Sentence 3 becomes a 3-word punch (clears Monotony)
     let mutated = "The engineering team deployed the new caching service on Tuesday. \
                    The database cluster handled the heavy traffic load without issue. \
                    Latency dropped fast. \
                    The product manager approved the rollout for all regional users.";
-    let diags_after = pass.check_block(&ProseBlock { text: mutated.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_after.iter().all(|d| d.rule_id != "Cadence.Monotony"), "Short punch sentence must break monotony");
+    let diags_after = pass.check_block(
+        &ProseBlock {
+            text: mutated.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(
+        diags_after.iter().all(|d| d.rule_id != "Cadence.Monotony"),
+        "Short punch sentence must break monotony"
+    );
 }
 
 #[test]
@@ -26,13 +48,39 @@ fn test_mutation_delayed_verb_frontloading() {
     let pass = CadencePass::new();
     // BEFORE: 20 words before the finite verb "found"
     let bad = "After a long and incredibly complicated series of cross-functional architecture review meetings in three different global regional office locations, we found the bug.";
-    let diags_before = pass.check_block(&ProseBlock { text: bad.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_before.iter().any(|d| d.rule_id == "Cadence.DelayedVerb"), "Should flag delayed verb");
+    let diags_before = pass.check_block(
+        &ProseBlock {
+            text: bad.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(
+        diags_before
+            .iter()
+            .any(|d| d.rule_id == "Cadence.DelayedVerb"),
+        "Should flag delayed verb"
+    );
 
     // AFTER MUTATION: Front-load subject and verb ("We found the bug...")
     let mutated = "We found the bug after a long and incredibly complicated series of cross-functional architecture review meetings in three different global regional office locations.";
-    let diags_after = pass.check_block(&ProseBlock { text: mutated.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_after.iter().all(|d| d.rule_id != "Cadence.DelayedVerb"), "Front-loading verb must clear warning");
+    let diags_after = pass.check_block(
+        &ProseBlock {
+            text: mutated.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(
+        diags_after
+            .iter()
+            .all(|d| d.rule_id != "Cadence.DelayedVerb"),
+        "Front-loading verb must clear warning"
+    );
 }
 
 #[test]
@@ -40,13 +88,33 @@ fn test_mutation_nominalization_to_concrete_verb() {
     let pass = CadencePass::new();
     // BEFORE: >8% abstract nominalizations in a block > 35 words
     let bad = "The implementation of the optimization and the administration of the organization required authorization and coordination across the entire engineering division during the transition period for our global infrastructure in order to maintain high performance and reliability.";
-    let diags_before = pass.check_block(&ProseBlock { text: bad.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_before.iter().any(|d| d.rule_id == "Cadence.AbstractDensity"));
+    let diags_before = pass.check_block(
+        &ProseBlock {
+            text: bad.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(diags_before
+        .iter()
+        .any(|d| d.rule_id == "Cadence.AbstractDensity"));
 
     // AFTER MUTATION: Concrete actors and active verbs
     let mutated = "The team built the fast cache and led the company while managers approved and coordinated work across every engineering group as we moved our global servers to the new cluster to keep the system fast and stable.";
-    let diags_after = pass.check_block(&ProseBlock { text: mutated.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_after.iter().all(|d| d.rule_id != "Cadence.AbstractDensity"));
+    let diags_after = pass.check_block(
+        &ProseBlock {
+            text: mutated.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(diags_after
+        .iter()
+        .all(|d| d.rule_id != "Cadence.AbstractDensity"));
 }
 
 #[test]
@@ -57,21 +125,46 @@ fn test_mutation_cold_start_to_cohesive_bridge() {
                Network switches drop packets under heavy load. \
                Frontend bundles contain too many third-party scripts. \
                Security audits happen every quarter in Brussels.";
-    let diags_before = pass.check_block(&ProseBlock { text: bad.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_before.iter().any(|d| d.rule_id == "Cadence.ColdStart"), "Should flag 3 consecutive cold starts");
+    let diags_before = pass.check_block(
+        &ProseBlock {
+            text: bad.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(
+        diags_before
+            .iter()
+            .any(|d| d.rule_id == "Cadence.ColdStart"),
+        "Should flag 3 consecutive cold starts"
+    );
 
     // AFTER MUTATION: Link each sentence to the previous one (Old-to-New contract)
     let mutated = "Database shards require careful memory tuning. \
                    This tuning prevents network switches from dropping packets. \
                    When packets drop, frontend bundles fail to load. \
                    However, quarterly security audits catch these failures early.";
-    let diags_after = pass.check_block(&ProseBlock { text: mutated.to_string(), start_byte: 0, segments: Vec::new() }, "test.md", "");
-    assert!(diags_after.iter().all(|d| d.rule_id != "Cadence.ColdStart"), "Adding cohesion bridges must clear ColdStart");
+    let diags_after = pass.check_block(
+        &ProseBlock {
+            text: mutated.to_string(),
+            start_byte: 0,
+            segments: Vec::new(),
+        },
+        "test.md",
+        "",
+    );
+    assert!(
+        diags_after.iter().all(|d| d.rule_id != "Cadence.ColdStart"),
+        "Adding cohesion bridges must clear ColdStart"
+    );
 }
 
 #[test]
 fn test_edge_case_abbreviations_and_decimals() {
-    let sentences = CadencePass::split_sentences("Visit e.g. the site. Use v1.2.0. Dr. Smith is here.");
+    let sentences =
+        CadencePass::split_sentences("Visit e.g. the site. Use v1.2.0. Dr. Smith is here.");
     println!("Sentences: {:?}", sentences);
     assert_eq!(sentences.len(), 3);
     assert!(sentences[0].contains("e.g."));

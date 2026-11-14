@@ -150,14 +150,22 @@ fn vale_passive_voice_regex_semantics() {
     // Vale tests exceptions against the matched token text, not the whole
     // sentence. Tokens form one alternation, so the first that matches wins.
     let alternation = regex::Regex::new(
-        &token_res.iter().map(|re| format!("(?:{})", re.as_str())).collect::<Vec<_>>().join("|"),
+        &token_res
+            .iter()
+            .map(|re| format!("(?:{})", re.as_str()))
+            .collect::<Vec<_>>()
+            .join("|"),
     )
     .unwrap();
     let alert = |text: &str| -> Option<String> {
         let found = alternation.find(text)?.as_str().to_string();
         (!exceptions.iter().any(|e| e.is_match(&found))).then_some(found)
     };
-    assert_eq!(alert("She was tired."), None, "adjective exception must cover 'was tired'");
+    assert_eq!(
+        alert("She was tired."),
+        None,
+        "adjective exception must cover 'was tired'"
+    );
     assert_eq!(
         alert("The report was written by the team.").as_deref(),
         Some("was written by"),
@@ -211,7 +219,8 @@ fn vale_puffery_no_longer_flags_plain_landscape() {
 fn spelling_suggestions_do_not_sink_grade() {
     use zinsser::scoring::{compute_grade, suggestion_penalty};
 
-    let content = "DuckDB keeps the kanban log queryable. POSIX tooling renders each webhook payload.";
+    let content =
+        "DuckDB keeps the kanban log queryable. POSIX tooling renders each webhook payload.";
     let diags = HarperPass::lint(content, "test.md").unwrap();
     let spelling = diags
         .iter()
@@ -258,7 +267,13 @@ fn non_spelling_suggestions_capped_at_one_letter() {
     );
 
     let mixed: Vec<Diagnostic> = (0..20)
-        .map(|i| diag(if i % 2 == 0 { "Harper.Spelling" } else { "Harper.Grammar" }))
+        .map(|i| {
+            diag(if i % 2 == 0 {
+                "Harper.Spelling"
+            } else {
+                "Harper.Grammar"
+            })
+        })
         .collect();
     assert_eq!(suggestion_penalty(&mixed), 1);
 }

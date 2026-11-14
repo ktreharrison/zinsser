@@ -79,7 +79,10 @@ fn split_sentences_is_linear_enough_for_long_paragraphs() {
     let text = "The team shipped it. ".repeat(40_000);
     let start = std::time::Instant::now();
     let sentences = CadencePass::split_sentences(&text);
-    assert_eq!(sentences.iter().filter(|s| !s.trim().is_empty()).count(), 40_000);
+    assert_eq!(
+        sentences.iter().filter(|s| !s.trim().is_empty()).count(),
+        40_000
+    );
     assert!(
         start.elapsed() < std::time::Duration::from_secs(5),
         "split_sentences took {:?}",
@@ -103,7 +106,11 @@ fn project_dictionary_is_found_from_subdirectories() {
     fs::write(root.join("docs/deep/page.md"), "We Zorblaxify.\n").unwrap();
 
     let expected = root.join(".zinsser/dictionary.txt").canonicalize().unwrap();
-    for anchor in [root.clone(), root.join("docs"), root.join("docs/deep/page.md")] {
+    for anchor in [
+        root.clone(),
+        root.join("docs"),
+        root.join("docs/deep/page.md"),
+    ] {
         assert_eq!(
             find_project_dictionary(&anchor).map(|p| p.canonicalize().unwrap()),
             Some(expected.clone()),
@@ -141,13 +148,17 @@ const CLEAN_SV: f64 = 1.75;
 fn calculate_score_matches_known_fixture_metrics() {
     let (words, sents, avg, sd, abs, sv) = fixture_metrics("slop");
     assert_eq!((words, sents), (151, 5));
-    assert!(close(avg, 30.2) && close(sd, 3.6) && close(abs, 4.0) && close(sv, SLOP_SV),
-        "slop metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}");
+    assert!(
+        close(avg, 30.2) && close(sd, 3.6) && close(abs, 4.0) && close(sv, SLOP_SV),
+        "slop metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}"
+    );
 
     let (words, sents, avg, sd, abs, sv) = fixture_metrics("clean_craft");
     assert_eq!((words, sents), (75, 12));
-    assert!(close(avg, 6.2) && close(sd, 2.8) && close(abs, 4.0) && close(sv, CLEAN_SV),
-        "clean_craft metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}");
+    assert!(
+        close(avg, 6.2) && close(sd, 2.8) && close(abs, 4.0) && close(sv, CLEAN_SV),
+        "clean_craft metrics drifted: avg={avg} sd={sd} abs={abs} sv={sv}"
+    );
 }
 
 #[test]
@@ -205,12 +216,16 @@ fn one_non_spelling_suggestion_costs_nothing_two_cost_one_letter() {
 
 #[test]
 fn closing_quotes_and_brackets_stay_with_their_sentence() {
-    let sentences: Vec<&str> = CadencePass::split_sentences("He said \"Go.\" She left. (It rained.) Done.")
-        .into_iter()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .collect();
-    assert_eq!(sentences, ["He said \"Go.\"", "She left.", "(It rained.)", "Done."]);
+    let sentences: Vec<&str> =
+        CadencePass::split_sentences("He said \"Go.\" She left. (It rained.) Done.")
+            .into_iter()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .collect();
+    assert_eq!(
+        sentences,
+        ["He said \"Go.\"", "She left.", "(It rained.)", "Done."]
+    );
 }
 
 #[test]
@@ -223,8 +238,14 @@ fn abstract_density_ignores_case() {
             .any(|d| d.rule_id == "Cadence.AbstractDensity")
     };
     assert!(lower.split_whitespace().count() >= 35);
-    assert!(density(lower), "lowercase paragraph must trigger the density warning");
-    assert!(density(&lower.to_uppercase()), "uppercase text must not bypass it");
+    assert!(
+        density(lower),
+        "lowercase paragraph must trigger the density warning"
+    );
+    assert!(
+        density(&lower.to_uppercase()),
+        "uppercase text must not bypass it"
+    );
 }
 
 #[test]
@@ -232,7 +253,13 @@ fn scorecard_targets_match_the_grading_thresholds() {
     use zinsser::scoring::{A_MAX_ABSTRACT_PCT, A_MAX_SV_DISTANCE};
     // Exactly at the printed limit must still grade A; just over must not.
     assert_eq!(compute_grade(6.2, 2.8, A_MAX_ABSTRACT_PCT, 1.4, 0, 0), 'A');
-    assert_ne!(compute_grade(6.2, 2.8, A_MAX_ABSTRACT_PCT + 0.1, 1.4, 0, 0), 'A');
+    assert_ne!(
+        compute_grade(6.2, 2.8, A_MAX_ABSTRACT_PCT + 0.1, 1.4, 0, 0),
+        'A'
+    );
     assert_eq!(compute_grade(6.2, 2.8, 4.0, A_MAX_SV_DISTANCE, 0, 0), 'A');
-    assert_ne!(compute_grade(6.2, 2.8, 4.0, A_MAX_SV_DISTANCE + 0.1, 0, 0), 'A');
+    assert_ne!(
+        compute_grade(6.2, 2.8, 4.0, A_MAX_SV_DISTANCE + 0.1, 0, 0),
+        'A'
+    );
 }
