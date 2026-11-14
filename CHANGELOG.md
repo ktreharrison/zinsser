@@ -6,6 +6,7 @@
 - Fix cadence diagnostic locations: columns pointed one character early, and drifted further after any link, emphasis or inline code earlier in the paragraph.
 - Find `.zinsser/dictionary.txt` in the checked path's parent directories, so checking a subdirectory uses the project dictionary.
 - Split sentences in linear time; very long paragraphs no longer slow `check` quadratically.
+- `zinsser score` exits 1 when an installed Vale fails, as `check` does; a missing Vale is still skipped.
 - Keep closing quotes and brackets with the sentence they close.
 - Match abstract nouns case-insensitively; uppercase text bypassed the density check.
 - Count an ellipsis or stacked punctuation (`...`, `?!`) as one sentence end; `Wait... really?!` was scored as five one-word sentences.
