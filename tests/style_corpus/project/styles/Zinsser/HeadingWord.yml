@@ -1,0 +1,6 @@
+extends: existence
+message: "heading %s"
+level: warning
+scope: heading
+tokens:
+  - widget

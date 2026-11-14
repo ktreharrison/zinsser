@@ -1,0 +1,6 @@
+extends: existence
+message: "bw %s"
+level: warning
+tokens:
+  - '\(TODO\)'
+  - 'ing\b'

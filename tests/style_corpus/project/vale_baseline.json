@@ -1,0 +1,250 @@
+[
+  {
+    "level": "suggestion",
+    "line": 1,
+    "column": 5,
+    "check": "Zinsser.NW",
+    "severity": "warning",
+    "message": "nw (TODO)"
+  },
+  {
+    "level": "suggestion",
+    "line": 1,
+    "column": 21,
+    "check": "Zinsser.NW",
+    "severity": "warning",
+    "message": "nw ing"
+  },
+  {
+    "level": "suggestion",
+    "line": 3,
+    "column": 4,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobar"
+  },
+  {
+    "level": "suggestion",
+    "line": 3,
+    "column": 5,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobar"
+  },
+  {
+    "level": "suggestion",
+    "line": 3,
+    "column": 12,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobaz"
+  },
+  {
+    "level": "suggestion",
+    "line": 3,
+    "column": 13,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobaz"
+  },
+  {
+    "level": "suggestion",
+    "line": 5,
+    "column": 5,
+    "check": "Zinsser.SUG",
+    "severity": "suggestion",
+    "message": "sug widget"
+  },
+  {
+    "level": "suggestion",
+    "line": 5,
+    "column": 19,
+    "check": "Zinsser.SUBNW",
+    "severity": "warning",
+    "message": "use for example not e.g."
+  },
+  {
+    "level": "suggestion",
+    "line": 6,
+    "column": 4,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobar"
+  },
+  {
+    "level": "suggestion",
+    "line": 6,
+    "column": 5,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobar"
+  },
+  {
+    "level": "suggestion",
+    "line": 6,
+    "column": 12,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobaz"
+  },
+  {
+    "level": "suggestion",
+    "line": 6,
+    "column": 13,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobaz"
+  },
+  {
+    "level": "suggestion",
+    "line": 8,
+    "column": 30,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobar"
+  },
+  {
+    "level": "suggestion",
+    "line": 10,
+    "column": 7,
+    "check": "Zinsser.HeadingWord",
+    "severity": "warning",
+    "message": "heading widget"
+  },
+  {
+    "level": "suggestion",
+    "line": 10,
+    "column": 7,
+    "check": "Zinsser.SUG",
+    "severity": "suggestion",
+    "message": "sug widget"
+  },
+  {
+    "level": "suggestion",
+    "line": 10,
+    "column": 18,
+    "check": "Zinsser.NW",
+    "severity": "warning",
+    "message": "nw ing"
+  },
+  {
+    "level": "suggestion",
+    "line": 12,
+    "column": 9,
+    "check": "Zinsser.SUG",
+    "severity": "suggestion",
+    "message": "sug widget"
+  },
+  {
+    "level": "warning",
+    "line": 1,
+    "column": 5,
+    "check": "Zinsser.NW",
+    "severity": "warning",
+    "message": "nw (TODO)"
+  },
+  {
+    "level": "warning",
+    "line": 1,
+    "column": 21,
+    "check": "Zinsser.NW",
+    "severity": "warning",
+    "message": "nw ing"
+  },
+  {
+    "level": "warning",
+    "line": 3,
+    "column": 4,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobar"
+  },
+  {
+    "level": "warning",
+    "line": 3,
+    "column": 5,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobar"
+  },
+  {
+    "level": "warning",
+    "line": 3,
+    "column": 12,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobaz"
+  },
+  {
+    "level": "warning",
+    "line": 3,
+    "column": 13,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobaz"
+  },
+  {
+    "level": "warning",
+    "line": 5,
+    "column": 19,
+    "check": "Zinsser.SUBNW",
+    "severity": "warning",
+    "message": "use for example not e.g."
+  },
+  {
+    "level": "warning",
+    "line": 6,
+    "column": 4,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobar"
+  },
+  {
+    "level": "warning",
+    "line": 6,
+    "column": 5,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobar"
+  },
+  {
+    "level": "warning",
+    "line": 6,
+    "column": 12,
+    "check": "Zinsser.RAW2",
+    "severity": "error",
+    "message": "raw2 foobaz"
+  },
+  {
+    "level": "warning",
+    "line": 6,
+    "column": 13,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobaz"
+  },
+  {
+    "level": "warning",
+    "line": 8,
+    "column": 30,
+    "check": "Zinsser.RAW3",
+    "severity": "warning",
+    "message": "raw3 oobar"
+  },
+  {
+    "level": "warning",
+    "line": 10,
+    "column": 7,
+    "check": "Zinsser.HeadingWord",
+    "severity": "warning",
+    "message": "heading widget"
+  },
+  {
+    "level": "warning",
+    "line": 10,
+    "column": 18,
+    "check": "Zinsser.NW",
+    "severity": "warning",
+    "message": "nw ing"
+  }
+]

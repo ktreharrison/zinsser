@@ -1,0 +1,5 @@
+extends: existence
+message: "sug %s"
+level: suggestion
+tokens:
+  - widget

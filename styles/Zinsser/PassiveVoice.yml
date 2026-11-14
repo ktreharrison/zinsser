@@ -3,5 +3,14 @@ message: "Passive voice detected ('%s'). Put the actor in the subject and the ac
 level: suggestion
 ignorecase: true
 tokens:
+  # Listed first: tokens form one alternation and the first alternative that
+  # matches at a position wins, so this must beat the shorter forms below.
+  - '\b(?:am|is|are|was|were|be|been|being)\s+\w+(?:ed|en|wn|ne|t)\s+by\b'
   - '\b(?:am|is|are|was|were|be|been|being)\s+\w+ed\b'
   - '\b(?:am|is|are|was|were|be|been|being)\s+(?:written|built|made|done|taken|given|shown|known|seen|found|held|kept|brought|thought|put|set|told|sent|left|run|drawn|broken|chosen|driven|fallen|forgotten|frozen|hidden|spoken|stolen|worn|woven)\b'
+exceptions:
+  # "to be" + adjectival participle is a linking verb with a subject
+  # complement, not passive voice ("She was tired", "He is excited").
+  # Anchored with $ so it removes only the bare phrase: "were confused by the
+  # instructions" names an agent and stays passive.
+  - '\b(?:am|is|are|was|were|be|been|being)\s+(?:tired|exhausted|bored|interested|excited|worried|pleased|surprised|delighted|disappointed|confused|scared|amazed|annoyed|embarrassed|satisfied|thrilled|concerned|frustrated|overwhelmed|relaxed|depressed|impressed|fascinated|devastated)$'
