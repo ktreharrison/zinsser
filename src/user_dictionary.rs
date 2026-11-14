@@ -23,8 +23,9 @@ const MAX_WORD_CHARS: usize = 100;
 /// `anchor` (the directory itself, or a file's parent) and walking up, the
 /// nearest `.zinsser/dictionary.txt` wins. `zinsser init` writes it at the
 /// project root, so checking `docs/` or `docs/page.md` from that root must
-/// still find it. Explicit `--dictionary` paths are used as given; a missing
-/// or unreadable explicit path is an error, not a silent fallback.
+/// still find it. Explicit `--dictionary` paths are used as given; a missing,
+/// unreadable, oversized or empty explicit file is an error, not a silent
+/// fallback. The default file is optional: problems with it only warn.
 ///
 /// Returns `Ok(None)` when no project words were found, so callers can fall
 /// back to the curated dictionary alone.
@@ -35,14 +36,41 @@ pub fn load_user_dictionary(
     let mut words: Vec<String> = Vec::new();
 
     if let Some(default_path) = find_project_dictionary(anchor) {
-        read_words(&default_path, &mut words);
+        match read_words(&default_path, &mut words) {
+            ReadOutcome::Read { .. } => {}
+            ReadOutcome::TooLarge(len) => eprintln!(
+                "Dictionary file {} is too large ({} bytes, max {}); skipping",
+                default_path.display(),
+                len,
+                MAX_DICTIONARY_BYTES
+            ),
+            ReadOutcome::Unreadable(error) => {
+                eprintln!("Could not read {}: {}", default_path.display(), error)
+            }
+        }
     }
     for path in extra_paths {
         if !path.is_file() {
             bail!("Dictionary file not found: {}", path.display());
         }
-        if !read_words(path, &mut words) {
-            bail!("Could not read dictionary file: {}", path.display());
+        match read_words(path, &mut words) {
+            ReadOutcome::Read { added: 0 } if words.len() < MAX_DICTIONARY_WORDS => {
+                bail!("Dictionary file {} has no usable words", path.display())
+            }
+            ReadOutcome::Read { .. } => {}
+            ReadOutcome::TooLarge(len) => bail!(
+                "Dictionary file {} is too large ({} bytes, max {})",
+                path.display(),
+                len,
+                MAX_DICTIONARY_BYTES
+            ),
+            ReadOutcome::Unreadable(error) => {
+                bail!(
+                    "Could not read dictionary file {}: {}",
+                    path.display(),
+                    error
+                )
+            }
         }
     }
 
@@ -101,24 +129,21 @@ pub fn find_project_dictionary(anchor: &Path) -> Option<PathBuf> {
         .find(|candidate| candidate.is_file())
 }
 
-/// Returns false when the file could not be read at all.
-fn read_words(path: &Path, words: &mut Vec<String>) -> bool {
+/// What reading one dictionary file produced. The caller decides whether a
+/// problem is a warning (default file) or an error (explicit file).
+enum ReadOutcome {
+    Read { added: usize },
+    TooLarge(u64),
+    Unreadable(String),
+}
+
+fn read_words(path: &Path, words: &mut Vec<String>) -> ReadOutcome {
     match std::fs::metadata(path) {
-        Ok(meta) if meta.len() > MAX_DICTIONARY_BYTES => {
-            eprintln!(
-                "Dictionary file {} is too large ({} bytes, max {}); skipping",
-                path.display(),
-                meta.len(),
-                MAX_DICTIONARY_BYTES
-            );
-            return true;
-        }
-        Err(error) => {
-            eprintln!("Could not read {}: {}", path.display(), error);
-            return false;
-        }
+        Ok(meta) if meta.len() > MAX_DICTIONARY_BYTES => return ReadOutcome::TooLarge(meta.len()),
+        Err(error) => return ReadOutcome::Unreadable(error.to_string()),
         _ => {}
     }
+    let before = words.len();
     match std::fs::read_to_string(path) {
         Ok(contents) => {
             for line in contents.lines() {
@@ -145,11 +170,10 @@ fn read_words(path: &Path, words: &mut Vec<String>) -> bool {
                 }
                 words.push(word.to_string());
             }
-            true
+            ReadOutcome::Read {
+                added: words.len() - before,
+            }
         }
-        Err(error) => {
-            eprintln!("Could not read {}: {}", path.display(), error);
-            false
-        }
+        Err(error) => ReadOutcome::Unreadable(error.to_string()),
     }
 }

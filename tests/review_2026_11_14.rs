@@ -361,3 +361,45 @@ fn ordered_list_link_only_items_are_not_spell_checked() {
     assert_eq!(spelling_words(lists), Vec::<String>::new());
     assert_eq!(spelling_words("1. We fixed teh bug.\n"), ["teh"]);
 }
+
+fn dict_dir(tag: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("zinsser-dicterr-{tag}-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.join(".zinsser")).unwrap();
+    dir
+}
+
+/// Sourcery on #3: an explicit --dictionary that is oversized or has no
+/// usable words must fail, not silently fall back to the curated dictionary.
+#[test]
+fn explicit_dictionary_that_is_oversized_or_empty_is_an_error() {
+    use zinsser::user_dictionary::load_user_dictionary;
+    let dir = dict_dir("explicit");
+    let big = dir.join("big.txt");
+    fs::write(&big, "word\n".repeat(300_000)).unwrap(); // 1.5 MB > 1 MB cap
+    let empty = dir.join("empty.txt");
+    fs::write(&empty, "# only comments\n\n").unwrap();
+    for (path, needle) in [(&big, "too large"), (&empty, "no usable words")] {
+        let err = load_user_dictionary(std::slice::from_ref(path), &dir)
+            .err()
+            .unwrap_or_else(|| panic!("{} should be an error", path.display()));
+        assert!(format!("{err:#}").contains(needle), "{err:#}");
+    }
+    fs::remove_dir_all(dir).unwrap();
+}
+
+/// The default .zinsser/dictionary.txt is optional: oversized or empty only
+/// warns and falls back.
+#[test]
+fn default_dictionary_that_is_oversized_or_empty_only_warns() {
+    use zinsser::user_dictionary::load_user_dictionary;
+    for (tag, contents) in [
+        ("dbig", "word\n".repeat(300_000)),
+        ("dempty", "# none\n".to_string()),
+    ] {
+        let dir = dict_dir(tag);
+        fs::write(dir.join(".zinsser/dictionary.txt"), contents).unwrap();
+        assert!(load_user_dictionary(&[], &dir).unwrap().is_none(), "{tag}");
+        fs::remove_dir_all(dir).unwrap();
+    }
+}
