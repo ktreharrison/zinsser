@@ -8,7 +8,11 @@ fn passive_hits(text: &str) -> Option<Vec<String>> {
         eprintln!("vale not installed; skipping Vale rule test");
         return None;
     }
-    let dir = std::env::temp_dir().join(format!("zinsser-vale-{}-{}", std::process::id(), text.len()));
+    let dir = std::env::temp_dir().join(format!(
+        "zinsser-vale-{}-{}",
+        std::process::id(),
+        text.len()
+    ));
     std::fs::create_dir_all(&dir).unwrap();
     let root = std::env::current_dir().unwrap();
     std::fs::write(

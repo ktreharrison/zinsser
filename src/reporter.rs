@@ -24,7 +24,10 @@ impl Reporter {
 
     pub fn print_scorecard(score: &DocumentScore) {
         println!("\n--- Craft Scorecard: {} ---", score.file.bold());
-        println!("Words: {} | Sentences: {}", score.word_count, score.sentence_count);
+        println!(
+            "Words: {} | Sentences: {}",
+            score.word_count, score.sentence_count
+        );
         println!(
             "Avg Sentence Length: {:.1} (A needs <= {:.1})",
             score.avg_sentence_length, A_MAX_AVG_LEN
