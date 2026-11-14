@@ -3,6 +3,7 @@ pub mod harper_pass;
 pub mod markdown;
 pub mod reporter;
 pub mod scoring;
+pub mod style_pass;
 pub mod types;
 pub mod user_dictionary;
 pub mod vale_runner;

@@ -55,3 +55,26 @@ fn passive_voice_keeps_by_agent_passives_and_skips_linking_verbs() {
     };
     assert_eq!(hits, ["were confused by", "was written by", "was sent"]);
 }
+
+#[test]
+fn builtin_passive_voice_matches_the_vale_expectation() {
+    // Runs with or without Vale installed.
+    let text = "The users were confused by the unclear instructions.\n\n\
+                She was tired after the run.\n\n\
+                He is excited about the launch.\n\n\
+                The report was written by the team.\n\n\
+                The file was sent yesterday.\n";
+    let hits: Vec<String> = zinsser::style_pass::StylePass::bundled()
+        .check(text, "t.md")
+        .into_iter()
+        .filter(|d| d.rule_id == "Zinsser.PassiveVoice")
+        .map(|d| d.message)
+        .collect();
+    assert_eq!(hits.len(), 3, "{hits:#?}");
+    for phrase in ["were confused by", "was written by", "was sent"] {
+        assert!(
+            hits.iter().any(|m| m.contains(&format!("('{phrase}')"))),
+            "{phrase}: {hits:#?}"
+        );
+    }
+}

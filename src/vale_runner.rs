@@ -9,6 +9,14 @@ static VALE_MISSING_NOTICE: Once = Once::new();
 
 pub struct ValeRunner;
 
+/// Zinsser's own checks run built in (see `style_pass`); Vale's copies of
+/// them are dropped so nothing is reported twice.
+fn is_builtin_check(rule_id: &str) -> bool {
+    rule_id
+        .split_once('.')
+        .is_some_and(|(style, _)| style.eq_ignore_ascii_case(crate::style_pass::STYLE))
+}
+
 impl ValeRunner {
     pub fn run(file_path: &str) -> Result<Vec<Diagnostic>> {
         let output = match Command::new("vale")
@@ -55,7 +63,7 @@ impl ValeRunner {
                 for msg in messages {
                     if let Some(m) = msg.as_object() {
                         let rule_id = m.get("Check").and_then(|v| v.as_str()).unwrap_or("");
-                        if rule_id.eq_ignore_ascii_case("Zinsser.CadenceMonotony") {
+                        if is_builtin_check(rule_id) {
                             continue;
                         }
                         diagnostics.push(Self::parse_msg(m, file_path));
@@ -67,7 +75,7 @@ impl ValeRunner {
                         for msg in messages {
                             if let Some(m) = msg.as_object() {
                                 let rule_id = m.get("Check").and_then(|v| v.as_str()).unwrap_or("");
-                                if rule_id.eq_ignore_ascii_case("Zinsser.CadenceMonotony") {
+                                if is_builtin_check(rule_id) {
                                     continue;
                                 }
                                 diagnostics.push(Self::parse_msg(m, file_path));

@@ -21,6 +21,7 @@ regex = "1.10"
 # network. Optional because its harper-pos-utils dependency always pulls in the
 # burn ML framework, which dominates build time and binary size.
 harper-brill = { version = "3", optional = true }
+yaml-rust2 = "0.13"
 
 [features]
 default = ["pos-tagger"]

@@ -8,6 +8,7 @@ use zinsser::cadence_pass::CadencePass;
 use zinsser::harper_pass::HarperPass;
 use zinsser::markdown::{extract_prose_blocks, get_line_column};
 use zinsser::reporter::Reporter;
+use zinsser::style_pass::{vale_config, StylePass};
 use zinsser::types::{Diagnostic, DocumentScore, Severity};
 use zinsser::user_dictionary::load_user_dictionary;
 use zinsser::vale_runner::ValeRunner;
@@ -27,7 +28,8 @@ enum Commands {
         path: PathBuf,
         #[arg(long)]
         format: Option<String>,
-        #[arg(long)]
+        /// Skip Zinsser's style rules and any external Vale pass.
+        #[arg(long, alias = "no-styles")]
         no_vale: bool,
         #[arg(long)]
         no_harper: bool,
@@ -155,6 +157,16 @@ fn main() -> Result<()> {
         } => {
             let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
                 .unwrap_or_else(|| FullDictionary::curated());
+            // Zinsser's own style rules run built in, from the project's
+            // Vale-format rule files when it has them. An installed Vale runs
+            // only for other styles the project's .vale.ini names.
+            let styles = if no_vale {
+                None
+            } else {
+                Some(StylePass::for_project(&path)?)
+            };
+            let external_vale =
+                !no_vale && vale_config(&path).is_some_and(|c| !c.external_styles().is_empty());
             let files = collect_markdown_files(path)?;
             let mut pass_failed = false;
             let mut all_diagnostics = Vec::new();
@@ -192,8 +204,11 @@ fn main() -> Result<()> {
                     all_diagnostics.extend(diags);
                 }
 
-                // 3. Vale Pass
-                if !no_vale {
+                // 3. Style rules (built in), then other Vale styles if any.
+                if let Some(styles) = &styles {
+                    all_diagnostics.extend(styles.check(&content, &path_str));
+                }
+                if external_vale {
                     match ValeRunner::run(&path_str) {
                         Ok(diags) => all_diagnostics.extend(diags),
                         Err(e) => {
@@ -235,8 +250,9 @@ fn main() -> Result<()> {
             let (words, sents, avg_len, stddev, abs_pct, avg_sv) = cadence.calculate_score(&blocks);
 
             // Factor the lint findings into the grade: prose the checker
-            // itself complains about should not score an A. Vale findings
-            // count when Vale is installed (an optional pass). Spelling
+            // itself complains about should not score an A. Zinsser's style
+            // rules always count (built in, so the grade does not depend on
+            // whether Vale is installed); other Vale styles do not. Spelling
             // suggestions never affect the grade - unknown project words are
             // dictionary coverage, not prose quality; other suggestions pull
             // the grade down at half weight, capped at one letter.
@@ -245,17 +261,7 @@ fn main() -> Result<()> {
             for block in &blocks {
                 lint_diagnostics.extend(cadence.check_block(block, &path_str, &content));
             }
-            // Like `check`, a pass that fails (as opposed to Vale being absent,
-            // which ValeRunner reports as Ok) makes the grade incomplete: still
-            // print it, but exit 1.
-            let mut pass_failed = false;
-            match ValeRunner::run(&path_str) {
-                Ok(diags) => lint_diagnostics.extend(diags),
-                Err(e) => {
-                    pass_failed = true;
-                    eprintln!("Vale pass failed for {}: {}", path_str, e);
-                }
-            }
+            lint_diagnostics.extend(StylePass::for_project(&path)?.check(&content, &path_str));
             let lint_warnings = lint_diagnostics
                 .iter()
                 .filter(|d| matches!(d.severity, Severity::Warning))
@@ -292,9 +298,6 @@ fn main() -> Result<()> {
                 grade,
             };
             Reporter::print_scorecard(&score);
-            if pass_failed {
-                std::process::exit(1);
-            }
         }
         Commands::Init => {
             for (relative_path, contents) in VALE_ASSETS {

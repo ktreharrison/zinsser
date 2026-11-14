@@ -120,6 +120,69 @@ pub fn extract_prose_blocks(content: &str) -> Vec<ProseBlock> {
     blocks
 }
 
+/// Text blocks in the scope Vale lints: paragraphs, headings, list items,
+/// blockquotes and table cells, joined across inline markup and soft breaks.
+/// Code blocks, inline code, raw HTML, front matter and link destinations are
+/// skipped. Each block keeps a source map, like prose blocks.
+pub fn extract_style_blocks(content: &str) -> Vec<ProseBlock> {
+    let options = Options::ENABLE_TABLES
+        | Options::ENABLE_FOOTNOTES
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_YAML_STYLE_METADATA_BLOCKS;
+    let mut blocks = Vec::new();
+    let mut text = String::new();
+    let mut segments: Vec<(usize, usize)> = Vec::new();
+    let mut start_byte = 0;
+    // Depth inside code blocks, HTML blocks and front matter.
+    let mut skip_depth = 0usize;
+
+    for (event, range) in Parser::new_ext(content, options).into_offset_iter() {
+        match event {
+            Event::Start(Tag::CodeBlock(_) | Tag::HtmlBlock | Tag::MetadataBlock(_)) => {
+                flush(&mut blocks, &mut text, &mut segments, start_byte);
+                skip_depth += 1;
+            }
+            Event::End(TagEnd::CodeBlock | TagEnd::HtmlBlock | TagEnd::MetadataBlock(_)) => {
+                skip_depth = skip_depth.saturating_sub(1);
+            }
+            Event::Start(
+                Tag::Paragraph
+                | Tag::Heading { .. }
+                | Tag::Item
+                | Tag::TableCell
+                | Tag::FootnoteDefinition(_),
+            )
+            | Event::End(
+                TagEnd::Paragraph
+                | TagEnd::Heading(_)
+                | TagEnd::Item
+                | TagEnd::TableCell
+                | TagEnd::FootnoteDefinition,
+            ) => flush(&mut blocks, &mut text, &mut segments, start_byte),
+            Event::Text(t) if skip_depth == 0 => {
+                if text.is_empty() {
+                    start_byte = range.start;
+                }
+                segments.push((text.len(), range.start));
+                text.push_str(&t);
+            }
+            Event::SoftBreak | Event::HardBreak if skip_depth == 0 && !text.is_empty() => {
+                segments.push((text.len(), range.start));
+                text.push(' ');
+            }
+            // Inline code, inline HTML and everything else are not prose.
+            Event::Code(_) | Event::InlineHtml(_) | Event::Html(_) if !text.is_empty() => {
+                // Keep words on either side apart, as Vale does.
+                segments.push((text.len(), range.start));
+                text.push(' ');
+            }
+            _ => {}
+        }
+    }
+    flush(&mut blocks, &mut text, &mut segments, start_byte);
+    blocks
+}
+
 pub fn get_line_column(content: &str, byte_offset: usize) -> (usize, usize) {
     let mut line = 1;
     let mut column = 1;

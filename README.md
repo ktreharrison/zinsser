@@ -1,13 +1,13 @@
 # Zinsser
 
-**Zinsser** is a local-first prose checker for professional writing. It combines grammar checks from Harper, configurable style rules from Vale, and its own sentence-cadence heuristics.
+**Zinsser** is a local-first prose checker for professional writing. It combines grammar checks from Harper, configurable style rules in Vale's format, and its own sentence-cadence heuristics.
 
 ## Features
 
 - **Anti-Slop Engine:** Detects and flags AI-generated "corporate speak" and "LLM-isms" using a curated vocabulary of modern AI markers.
 - **Cadence checks:** Zinsser's Rust pass estimates sentence-length monotony, delayed verbs, abstract-noun density, and sentence-to-sentence cohesion.
 - **Harper:** Runs `harper-core` grammar and spelling checks. The cadence pass uses Harper's Brill part-of-speech tagger (`harper-brill`, bundled and offline) to find the first verb, with a dictionary fallback.
-- **Vale:** Runs the project's YAML wording and phrasing rules when Vale is installed. Without Vale, this pass is skipped with a note.
+- **Style rules:** Zinsser's wording and phrasing rules are Vale-format YAML files, run by a built-in engine. Vale is not required. An installed Vale is used only for other Vale styles your project adds.
 
 ## Installation
 
@@ -35,14 +35,18 @@ curl --proto '=https' --tlsv1.2 -LsSf https://github.com/ktreharrison/zinsser/re
 
 The script downloads a prebuilt binary from the latest GitHub release. It becomes available after the first release is published; use Cargo until then.
 
-In each project you want to check, initialize the local Vale rules and configuration:
+Optionally, in each project, install editable copies of the style rules and a `.vale.ini`:
 
 ```bash
 cd path/to/your/project
 zinsser init
 ```
 
-Vale is optional. Install [Vale](https://vale.sh/) to enable Zinsser's YAML style rules. Without it, Zinsser skips that pass and prints a note; Harper and cadence checks still run.
+You do not need [Vale](https://vale.sh/). The style rules are built in and run the same on every machine. They stay Vale-compatible:
+
+- After `zinsser init`, Zinsser reads the project's own `styles/Zinsser/*.yml` (found through the nearest `.vale.ini`), so edits to those files take effect, and Vale reads the same files.
+- If `.vale.ini` lists other styles in `BasedOnStyles` (for example `BasedOnStyles = Zinsser, Microsoft`), `zinsser check` runs an installed Vale for them and reports their alerts beside its own. Vale's copies of the Zinsser rules are dropped, so nothing is reported twice.
+- The built-in engine supports Vale's `existence` and `substitution` rules. Other rule types in `styles/Zinsser/` are skipped; use Vale for them.
 
 ## Usage
 
@@ -67,7 +71,7 @@ Pass a directory, such as `docs/`, to recursively check its Markdown files. Zins
 Optional flags:
 
 - `--format json`: Emit JSON diagnostics for scripts and editors.
-- `--no-vale`: Run Harper and cadence checks without Vale.
+- `--no-vale` (alias `--no-styles`): Skip the style rules and any external Vale pass; run Harper and cadence checks only.
 - `--no-harper`: Skip grammar and spelling checks.
 - `--dictionary <path>`: Extra word list (one word per line) for project terms. The nearest `.zinsser/dictionary.txt` at or above the checked path is always loaded, so `zinsser check docs/` from the project root finds the file `zinsser init` created. Case variants are handled; plurals and other inflected forms need their own entries.
 
@@ -92,7 +96,7 @@ Overall Grade: A
 
 The grade combines the rhythm metrics with the linter's own findings: prose the checker complains about cannot score an A. Warnings cost one letter grade each, errors two. Spelling findings (unknown words) never affect the grade: they mark dictionary coverage, not prose quality, and project terms belong in `.zinsser/dictionary.txt` or `--dictionary`. Other suggestion-level findings (grammar, style) cost at most one letter in total.
 
-The score reflects the checks that actually ran. The Vale style pass is optional: when a `vale` binary is installed its findings count toward the grade; without Vale, the grade reflects Harper and cadence findings only, and the run prints a note that the Vale pass was skipped. Run `zinsser init` and install Vale to make scores comparable across machines.
+The grade counts Harper, cadence and Zinsser's own style rules, all built in, so the same file scores the same with or without Vale installed. Other Vale styles a project adds do not affect the grade.
 
 The scorecard measures the properties above, not whether the writing is good.
 
@@ -101,14 +105,14 @@ The scorecard measures the properties above, not whether the writing is good.
 zinsser init
 ```
 
-`init` installs the Vale rules and Tengo script under `styles/`, creates `.vale.ini`, and seeds `.zinsser/dictionary.txt` for project vocabulary. Existing files are preserved.
+`init` installs editable copies of the style rules and Tengo script under `styles/`, creates `.vale.ini`, and seeds `.zinsser/dictionary.txt` for project vocabulary. Existing files are preserved.
 
 ## Architecture
 
 `zinsser check` combines three passes:
 1. **Harper** checks grammar and spelling.
 2. **Zinsser's Rust pass** applies cadence and density heuristics.
-3. **Vale** applies the project's declarative wording rules via 9 rule files:
+3. **Style rules** apply declarative wording rules from 9 Vale-format files, using the built-in engine (`CadenceMonotony` is implemented natively in the cadence pass):
    - `AI_Tells.yml`: Detects LLM-specific phrasing.
    - `CadenceMonotony.yml`: Flags rhythmic repetition.
    - `Clutter.yml`: Enforces Ruthless Economy.
