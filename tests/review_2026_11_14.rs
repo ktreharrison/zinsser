@@ -352,3 +352,12 @@ fn possessive_after_link_and_file_extensions_are_not_words() {
         Vec::<String>::new()
     );
 }
+
+/// Sourcery on #4: a link that is the whole item of a NUMBERED list is a
+/// navigation entry too; numbered-list prose is still checked.
+#[test]
+fn ordered_list_link_only_items_are_not_spell_checked() {
+    let lists = "1. [Deutsche](README.de.md)\n2. [Polskie readme](README.pl.md)\n10) [svenska](README.sv.md)\n";
+    assert_eq!(spelling_words(lists), Vec::<String>::new());
+    assert_eq!(spelling_words("1. We fixed teh bug.\n"), ["teh"]);
+}
