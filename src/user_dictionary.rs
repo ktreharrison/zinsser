@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
-use harper_core::WordMetadata;
-use harper_core::{Dictionary, FullDictionary, MergedDictionary};
+use harper_core::spell::{Dictionary, FstDictionary, MergedDictionary, MutableDictionary};
+use harper_core::DictWordMetadata;
 
 /// Default project dictionary location, relative to the checked project.
 pub const DEFAULT_DICTIONARY_PATH: &str = ".zinsser/dictionary.txt";
@@ -68,15 +68,16 @@ pub fn load_user_dictionary(
         }
     }
 
-    let mut user_dict = FullDictionary::new();
-    user_dict.extend_words(
-        variants
-            .iter()
-            .map(|w| (w.chars().collect::<Vec<char>>(), WordMetadata::default())),
-    );
+    let mut user_dict = MutableDictionary::new();
+    user_dict.extend_words(variants.iter().map(|w| {
+        (
+            w.chars().collect::<Vec<char>>(),
+            DictWordMetadata::default(),
+        )
+    }));
 
     let mut merged = MergedDictionary::new();
-    merged.add_dictionary(FullDictionary::curated());
+    merged.add_dictionary(FstDictionary::curated());
     merged.add_dictionary(Arc::new(user_dict));
     Ok(Some(Arc::new(merged)))
 }

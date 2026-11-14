@@ -2,7 +2,8 @@ use crate::markdown::ProseBlock;
 use crate::types::{Diagnostic, Severity};
 #[cfg(feature = "pos-tagger")]
 use harper_brill::{brill_tagger, BrillTagger, FreqDict, Tagger, UPOS};
-use harper_core::{Dictionary, FullDictionary, WordMetadata};
+use harper_core::spell::{Dictionary, FstDictionary};
+use harper_core::DictWordMetadata;
 use regex::Regex;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -18,7 +19,7 @@ pub struct CadencePass {
 
 impl CadencePass {
     pub fn new() -> Self {
-        Self::with_dictionary(FullDictionary::curated())
+        Self::with_dictionary(FstDictionary::curated())
     }
 
     pub fn with_dictionary(dictionary: Arc<dyn Dictionary>) -> Self {
@@ -139,13 +140,13 @@ impl CadencePass {
     /// Words Harper marks only as verbs (never noun/adjective/adverb/
     /// conjunction/article/preposition) are safe to treat as verbs without
     /// sentence context.
-    fn is_strict_verb_metadata(meta: &WordMetadata) -> bool {
+    fn is_strict_verb_metadata(meta: &DictWordMetadata) -> bool {
         meta.verb.is_some()
             && meta.noun.is_none()
             && meta.adjective.is_none()
             && meta.adverb.is_none()
             && meta.conjunction.is_none()
-            && !meta.article
+            && meta.determiner.is_none()
             && !meta.preposition
     }
 
@@ -196,7 +197,11 @@ impl CadencePass {
         if normalized.is_empty() {
             return false;
         }
-        let meta = self.dictionary.get_word_metadata_str(normalized);
+        // Unknown words get empty metadata, as harper-core 0.16 returned.
+        let meta = self
+            .dictionary
+            .get_word_metadata_str(normalized)
+            .unwrap_or_default();
         if Self::is_strict_verb_metadata(&meta) || VERB_WORDLIST.contains(&normalized) {
             return true;
         }
@@ -207,7 +212,10 @@ impl CadencePass {
             return false;
         }
         for candidate in Self::stem_candidates(normalized) {
-            let stem_meta = self.dictionary.get_word_metadata_str(&candidate);
+            let stem_meta = self
+                .dictionary
+                .get_word_metadata_str(&candidate)
+                .unwrap_or_default();
             if Self::is_strict_verb_metadata(&stem_meta)
                 || VERB_WORDLIST.contains(&candidate.as_str())
             {

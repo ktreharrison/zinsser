@@ -1,7 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use harper_core::Dictionary;
-use harper_core::FullDictionary;
+use harper_core::spell::{Dictionary, FstDictionary};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use zinsser::cadence_pass::CadencePass;
@@ -156,7 +155,7 @@ fn main() -> Result<()> {
             dictionary,
         } => {
             let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
-                .unwrap_or_else(|| FullDictionary::curated());
+                .unwrap_or_else(|| FstDictionary::curated());
             // Zinsser's own style rules run built in, from the project's
             // Vale-format rule files when it has them. An installed Vale runs
             // only for other styles the project's .vale.ini names.
@@ -268,7 +267,7 @@ fn main() -> Result<()> {
         }
         Commands::Score { path, dictionary } => {
             let dictionary: Arc<dyn Dictionary> = load_user_dictionary(&dictionary, &path)?
-                .unwrap_or_else(|| FullDictionary::curated());
+                .unwrap_or_else(|| FstDictionary::curated());
             let content = std::fs::read_to_string(&path)?;
             let path_str = path.to_string_lossy().to_string();
             let blocks = extract_prose_blocks(&content);
