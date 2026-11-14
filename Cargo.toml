@@ -1,6 +1,6 @@
 [package]
 name = "zinsser"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Local-first prose linter and structural cadence engine"
 license = "MIT OR Apache-2.0"
