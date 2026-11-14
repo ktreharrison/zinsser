@@ -19,10 +19,12 @@ const MAX_WORD_CHARS: usize = 100;
 /// extra paths passed on the command line. One word per line; blank lines and
 /// lines starting with `#` are ignored.
 ///
-/// The default dictionary is resolved relative to `anchor`: the directory
-/// itself when checking a directory, or the file's parent when scoring a
-/// single file. Explicit `--dictionary` paths are used as given; a missing or
-/// unreadable explicit path is an error, not a silent fallback.
+/// The default dictionary is found the way git finds `.git`: starting at
+/// `anchor` (the directory itself, or a file's parent) and walking up, the
+/// nearest `.zinsser/dictionary.txt` wins. `zinsser init` writes it at the
+/// project root, so checking `docs/` or `docs/page.md` from that root must
+/// still find it. Explicit `--dictionary` paths are used as given; a missing
+/// or unreadable explicit path is an error, not a silent fallback.
 ///
 /// Returns `Ok(None)` when no project words were found, so callers can fall
 /// back to the curated dictionary alone.
@@ -32,13 +34,7 @@ pub fn load_user_dictionary(
 ) -> Result<Option<Arc<dyn Dictionary>>> {
     let mut words: Vec<String> = Vec::new();
 
-    let project_dir = if anchor.is_dir() {
-        anchor
-    } else {
-        anchor.parent().unwrap_or(anchor)
-    };
-    let default_path = project_dir.join(DEFAULT_DICTIONARY_PATH);
-    if default_path.is_file() {
+    if let Some(default_path) = find_project_dictionary(anchor) {
         read_words(&default_path, &mut words);
     }
     for path in extra_paths {
@@ -83,6 +79,26 @@ pub fn load_user_dictionary(
     merged.add_dictionary(FullDictionary::curated());
     merged.add_dictionary(Arc::new(user_dict));
     Ok(Some(Arc::new(merged)))
+}
+
+/// Nearest `.zinsser/dictionary.txt` at or above `anchor`.
+pub fn find_project_dictionary(anchor: &Path) -> Option<PathBuf> {
+    let start = if anchor.is_dir() {
+        anchor.to_path_buf()
+    } else {
+        anchor.parent().map(Path::to_path_buf).unwrap_or_default()
+    };
+    // `Path::new("README.md").parent()` is "", which has no ancestors to walk.
+    let start = if start.as_os_str().is_empty() {
+        PathBuf::from(".")
+    } else {
+        start
+    };
+    let start = start.canonicalize().unwrap_or(start);
+    start
+        .ancestors()
+        .map(|dir| dir.join(DEFAULT_DICTIONARY_PATH))
+        .find(|candidate| candidate.is_file())
 }
 
 /// Returns false when the file could not be read at all.
