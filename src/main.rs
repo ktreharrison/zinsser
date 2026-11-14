@@ -254,9 +254,16 @@ fn main() -> Result<()> {
             for block in &blocks {
                 lint_diagnostics.extend(cadence.check_block(block, &path_str, &content));
             }
+            // Like `check`, a pass that fails (as opposed to Vale being absent,
+            // which ValeRunner reports as Ok) makes the grade incomplete: still
+            // print it, but exit 1.
+            let mut pass_failed = false;
             match ValeRunner::run(&path_str) {
                 Ok(diags) => lint_diagnostics.extend(diags),
-                Err(e) => eprintln!("Vale pass failed for {}: {}", path_str, e),
+                Err(e) => {
+                    pass_failed = true;
+                    eprintln!("Vale pass failed for {}: {}", path_str, e);
+                }
             }
             let lint_warnings = lint_diagnostics
                 .iter()
@@ -294,6 +301,9 @@ fn main() -> Result<()> {
                 grade,
             };
             Reporter::print_scorecard(&score);
+            if pass_failed {
+                std::process::exit(1);
+            }
         }
         Commands::Init => {
             for (relative_path, contents) in VALE_ASSETS {
