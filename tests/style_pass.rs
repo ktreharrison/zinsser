@@ -203,3 +203,121 @@ fn builtin_engine_matches_live_vale_when_installed() {
         .collect();
     assert_eq!(ours, live, "built-in engine and live Vale disagree");
 }
+
+/// Copy `tests/style_corpus/project` to a temp dir with the given
+/// MinAlertLevel, so tests can vary the config without touching the repo.
+fn feature_project(level: &str) -> std::path::PathBuf {
+    let src = std::path::Path::new("tests/style_corpus/project");
+    let dst = std::env::temp_dir().join(format!("zinsser-feat-{level}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dst);
+    std::fs::create_dir_all(dst.join("styles/Zinsser")).unwrap();
+    for entry in std::fs::read_dir(src.join("styles/Zinsser")).unwrap() {
+        let path = entry.unwrap().path();
+        std::fs::copy(
+            &path,
+            dst.join("styles/Zinsser").join(path.file_name().unwrap()),
+        )
+        .unwrap();
+    }
+    std::fs::copy(src.join("doc.md"), dst.join("doc.md")).unwrap();
+    let ini = std::fs::read_to_string(src.join(".vale.ini"))
+        .unwrap()
+        .replace(
+            "MinAlertLevel = suggestion",
+            &format!("MinAlertLevel = {level}"),
+        );
+    std::fs::write(dst.join(".vale.ini"), ini).unwrap();
+    dst
+}
+
+fn feature_baseline(level: &str) -> BTreeSet<(usize, usize, String, String)> {
+    let raw = std::fs::read_to_string("tests/style_corpus/project/vale_baseline.json").unwrap();
+    let items: Vec<serde_json::Value> = serde_json::from_str(&raw).unwrap();
+    items
+        .iter()
+        .filter(|a| a["level"] == level)
+        .map(|a| {
+            (
+                a["line"].as_u64().unwrap() as usize,
+                a["column"].as_u64().unwrap() as usize,
+                a["check"].as_str().unwrap().to_string(),
+                a["message"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect()
+}
+
+/// nonword, raw (with and without tokens), substitution nonword and
+/// MinAlertLevel match Vale; scoped and non-text rule types are handed off.
+#[test]
+fn engine_matches_vale_on_rule_features_and_hands_off_the_rest() {
+    for level in ["suggestion", "warning"] {
+        let dir = feature_project(level);
+        let pass = StylePass::for_project(&dir).unwrap();
+        let handed: Vec<&str> = pass.needs_vale.iter().map(|(n, _)| n.as_str()).collect();
+        assert_eq!(handed, ["Zinsser.Caps", "Zinsser.HeadingWord"]);
+        let content = std::fs::read_to_string(dir.join("doc.md")).unwrap();
+        let ours: BTreeSet<_> = pass
+            .check(&content, "doc.md")
+            .into_iter()
+            .map(|d| (d.line, d.column, d.rule_id, d.message))
+            .collect();
+        let expected: BTreeSet<_> = feature_baseline(level)
+            .into_iter()
+            .filter(|a| !handed.contains(&a.2.as_str()))
+            .collect();
+        assert_eq!(ours, expected, "MinAlertLevel = {level}");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+/// End to end: with Vale installed, `zinsser check` reports exactly what Vale
+/// does for the style rules, the handed-off ones included, without duplicates.
+#[test]
+fn check_matches_vale_end_to_end_when_installed() {
+    if std::process::Command::new("vale")
+        .arg("--version")
+        .output()
+        .is_err()
+    {
+        eprintln!("vale not installed; skipping end-to-end comparison");
+        return;
+    }
+    for level in ["suggestion", "warning"] {
+        let dir = feature_project(level);
+        let out = std::process::Command::new(env!("CARGO_BIN_EXE_zinsser"))
+            .args(["check", "doc.md", "--no-harper", "--format", "json"])
+            .current_dir(&dir)
+            .output()
+            .unwrap();
+        let diags: Vec<serde_json::Value> = serde_json::from_slice(&out.stdout).unwrap();
+        let ours: BTreeSet<_> = diags
+            .iter()
+            .filter(|d| {
+                let id = d["rule_id"].as_str().unwrap();
+                id.starts_with("Zinsser.") && !id.starts_with("Zinsser.Cadence")
+            })
+            .map(|d| {
+                (
+                    d["line"].as_u64().unwrap() as usize,
+                    d["column"].as_u64().unwrap() as usize,
+                    d["rule_id"].as_str().unwrap().to_string(),
+                    d["message"].as_str().unwrap().to_string(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            ours.len(),
+            diags
+                .iter()
+                .filter(|d| {
+                    let id = d["rule_id"].as_str().unwrap();
+                    id.starts_with("Zinsser.") && !id.starts_with("Zinsser.Cadence")
+                })
+                .count(),
+            "duplicate alerts"
+        );
+        assert_eq!(ours, feature_baseline(level), "MinAlertLevel = {level}");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

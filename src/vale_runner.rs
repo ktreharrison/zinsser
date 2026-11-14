@@ -9,16 +9,25 @@ static VALE_MISSING_NOTICE: Once = Once::new();
 
 pub struct ValeRunner;
 
-/// Zinsser's own checks run built in (see `style_pass`); Vale's copies of
-/// them are dropped so nothing is reported twice.
-fn is_builtin_check(rule_id: &str) -> bool {
+/// Zinsser's own checks run built in (see `style_pass`), so Vale's copies are
+/// dropped to avoid reporting them twice, except the rules the built-in
+/// engine handed to Vale (`needs_vale`).
+fn is_builtin_check(rule_id: &str, needs_vale: &[String]) -> bool {
     rule_id
         .split_once('.')
         .is_some_and(|(style, _)| style.eq_ignore_ascii_case(crate::style_pass::STYLE))
+        && !needs_vale.iter().any(|r| r.eq_ignore_ascii_case(rule_id))
 }
 
 impl ValeRunner {
-    pub fn run(file_path: &str) -> Result<Vec<Diagnostic>> {
+    /// Whether a `vale` binary can be started.
+    pub fn available() -> bool {
+        Command::new("vale").arg("--version").output().is_ok()
+    }
+
+    /// Run Vale on one file, keeping alerts from other styles and from the
+    /// Zinsser rules listed in `needs_vale`.
+    pub fn run(file_path: &str, needs_vale: &[String]) -> Result<Vec<Diagnostic>> {
         let output = match Command::new("vale")
             .arg("--output=JSON")
             .arg(file_path)
@@ -63,7 +72,7 @@ impl ValeRunner {
                 for msg in messages {
                     if let Some(m) = msg.as_object() {
                         let rule_id = m.get("Check").and_then(|v| v.as_str()).unwrap_or("");
-                        if is_builtin_check(rule_id) {
+                        if is_builtin_check(rule_id, needs_vale) {
                             continue;
                         }
                         diagnostics.push(Self::parse_msg(m, file_path));
@@ -75,7 +84,7 @@ impl ValeRunner {
                         for msg in messages {
                             if let Some(m) = msg.as_object() {
                                 let rule_id = m.get("Check").and_then(|v| v.as_str()).unwrap_or("");
-                                if is_builtin_check(rule_id) {
+                                if is_builtin_check(rule_id, needs_vale) {
                                     continue;
                                 }
                                 diagnostics.push(Self::parse_msg(m, file_path));

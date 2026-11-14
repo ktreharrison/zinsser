@@ -46,7 +46,7 @@ You do not need [Vale](https://vale.sh/). The style rules are built in and run t
 
 - After `zinsser init`, Zinsser reads the project's own `styles/Zinsser/*.yml` (found through the nearest `.vale.ini`), so edits to those files take effect, and Vale reads the same files.
 - If `.vale.ini` lists other styles in `BasedOnStyles` (for example `BasedOnStyles = Zinsser, Microsoft`), `zinsser check` runs an installed Vale for them and reports their alerts beside its own. Vale's copies of the Zinsser rules are dropped, so nothing is reported twice.
-- The built-in engine supports Vale's `existence` and `substitution` rules. Other rule types in `styles/Zinsser/` are skipped; use Vale for them.
+- The built-in engine runs `existence` and `substitution` rules exactly as Vale does, including `ignorecase`, `nonword`, `raw`, `exceptions` and the `.vale.ini` `MinAlertLevel`. Any rule it cannot reproduce exactly (another rule type such as `capitalization` or `sequence`, or a `scope` other than `text`) is handed to an installed Vale instead of being approximated. Without Vale, `check` names each such rule as not checked, and `score` names the rules it left out of the grade. `Vocab` lists are applied by Vale only; Zinsser prints a note when one is configured.
 
 ## Usage
 
