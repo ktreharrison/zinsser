@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] - Unreleased
+
+### Breaking changes (library API)
+
+- `CadencePass::with_dictionary`, `HarperPass::lint_with_dictionary` and `load_user_dictionary` take and return harper-core 3 `spell::Dictionary` types (`FullDictionary` is now `FstDictionary`, `WordMetadata` is `DictWordMetadata`).
+
+### Changes
+
+- Upgrade harper-core 0.16 to 3.2. Spelling noise on technical READMEs drops (rich 52 to 19 spelling hits without a dictionary, typer 36 to 23, httpx 21 to 13), and harper-core 3 adds capitalization, usage, typo and formatting checks. The binary grows from 5.9 MB to 15.5 MB, because harper-core 3 bundles the tagger's dependencies; its optional thesaurus is left out, which changes no findings.
+- `--no-default-features` no longer shrinks the build (harper-core 3 depends on the tagger itself); it now only switches verb detection to the dictionary fallback.
+- Do not spell-check a link that is the whole line, apart from a list marker or bullet (translation and navigation lists, #2); links inside sentences are still checked.
+- Do not report the `s` of a possessive right after a link (`[FastAPI](...)'s`) or a file extension in a name (`table_movie.py`) as misspellings.
+- Turn off harper-core 3.2's SeemsLikeAdjective and ExpandIme rules, which print a debug line to stderr on every match.
+
 ## [0.2.0] - Unreleased
 
 ### Breaking changes (library API)
