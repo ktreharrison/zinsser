@@ -2,10 +2,19 @@ name: CI
 on: [push, pull_request]
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows covers path handling (dictionary and .vale.ini discovery,
+        # canonicalize) and CRLF checkouts, which column mapping must survive.
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
       - run: cargo test --verbose
       - run: cargo clippy --all-targets --all-features -- -D warnings
       # The lean build drops the Brill tagger (and the burn ML stack it pulls in).
