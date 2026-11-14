@@ -19,6 +19,16 @@ fn is_non_english_word(chars: &[char], start: usize, end: usize) -> bool {
         .is_some_and(|word| word.iter().any(|c| c.is_alphabetic() && !c.is_ascii()))
 }
 
+/// Remove an ordered-list marker (`1.`, `2)`, `10.`) from the text before a
+/// link, so numbered navigation lists count as link-only lines too.
+fn strip_ordered_marker(before: &str) -> &str {
+    let digits = before.chars().take_while(char::is_ascii_digit).count();
+    match before[digits..].chars().next() {
+        Some('.' | ')') if digits > 0 => before[digits + 1..].trim(),
+        _ => before,
+    }
+}
+
 /// Byte ranges of Markdown links that are the only content of their line,
 /// apart from a list marker or bullet: translation and navigation lists
 /// (`- [Deutsche](README.de.md)`, rich's `• [Polskie readme](...)`). Their
@@ -36,8 +46,10 @@ fn link_only_line_ranges(content: &str) -> Vec<Range<usize>> {
         let line_end = content[range.end..]
             .find('\n')
             .map_or(content.len(), |i| range.end + i);
-        let before = content[line_start..range.start]
-            .trim_matches(|c: char| c.is_whitespace() || bullets.contains(&c));
+        let before = strip_ordered_marker(
+            content[line_start..range.start]
+                .trim_matches(|c: char| c.is_whitespace() || bullets.contains(&c)),
+        );
         let after = content[range.end..line_end]
             .trim_matches(|c: char| c.is_whitespace() || bullets.contains(&c) || c == ',');
         if before.is_empty() && after.is_empty() {
